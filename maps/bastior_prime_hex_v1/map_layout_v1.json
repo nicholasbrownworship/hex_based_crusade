@@ -3,7 +3,7 @@
   "name": "Bastior Prime (Expanded Test Map)",
   "version": "v1.1",
   "coord_system": "axial",
-  "radius": 6,
+  "radius": 12,
   "movement_recommendation": "D6 (or D3 for slower campaigns)",
   "installation_selection_rule": "Each faction may select up to TWO controlled installations to be Active per battle.",
   "hexes": [
