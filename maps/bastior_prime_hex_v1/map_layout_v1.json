@@ -9,22 +9,22 @@
   "hexes": [
   { "q": 0,  "r": 0,   "terrain": "urban",      "installation_id": "administratum_nexus", "notes": "Planetary command nexus." },
 
-   MEDICAE (3)
+   "MEDICAE (3)"
   { "q": -3, "r": 6,   "terrain": "urban",      "installation_id": "medicae_facility",    "notes": "Northern Medicae facility." },
   { "q": 3,  "r": -6,  "terrain": "urban",      "installation_id": "medicae_facility",    "notes": "Southern Medicae facility." },
   { "q": 6,  "r": -3,  "terrain": "urban",      "installation_id": "medicae_facility",    "notes": "Eastern Medicae facility." },
 
-  VOID PORTS (3)
+  "VOID PORTS (3)"
   { "q": -8, "r": 4,   "terrain": "industrial", "installation_id": "void_port",           "notes": "Secondary spaceport and supply corridor." },
   { "q": 8,  "r": -4,  "terrain": "industrial", "installation_id": "void_port",           "notes": "Primary spaceport and drop corridors." },
   { "q": 0,  "r": 11,  "terrain": "industrial", "installation_id": "void_port",           "notes": "Orbital elevator / rapid insertion hub." },
 
-  FORTRESSES (3)
+  "FORTRESSES (3)"
   { "q": -12,"r": 0,   "terrain": "fortified",  "installation_id": "fortress_complex",    "notes": "Outer bastion line." },
   { "q": 12, "r": -12, "terrain": "fortified",  "installation_id": "fortress_complex",    "notes": "Ridge fortress complex." },
   { "q": 0,  "r": -12, "terrain": "fortified",  "installation_id": "fortress_complex",    "notes": "Subterranean redoubt and gun-battery line." },
 
-  MANUFACTORUM (8)
+  "MANUFACTORUM (8)"
   { "q": -9, "r": -1,  "terrain": "industrial", "installation_id": "manufactorum_node",   "notes": "Heavy manufactorum node." },
   { "q": 9,  "r": 1,   "terrain": "industrial", "installation_id": "manufactorum_node",   "notes": "Heavy manufactorum node." },
   { "q": 0,  "r": 10,  "terrain": "industrial", "installation_id": "manufactorum_node",   "notes": "Light manufactorum node." },
@@ -34,7 +34,7 @@
   { "q": -11,"r": 3,   "terrain": "industrial", "installation_id": "manufactorum_node",   "notes": "Borderline salvage-forge." },
   { "q": 11, "r": -3,  "terrain": "industrial", "installation_id": "manufactorum_node",   "notes": "Borderline salvage-forge." },
 
-  HIVE RUINS (9)
+  "HIVE RUINS (9)"
   { "q": -10,"r": 2,   "terrain": "wasteland",  "installation_id": "hive_ruins",          "notes": "Collapsed hive district." },
   { "q": 10, "r": -2,  "terrain": "wasteland",  "installation_id": "hive_ruins",          "notes": "Collapsed hive district." },
   { "q": -6, "r": 9,   "terrain": "wasteland",  "installation_id": "hive_ruins",          "notes": "Sprawl ruins and kill-zones." },
