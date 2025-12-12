@@ -1,0 +1,44 @@
+[
+  {
+    "id": "administratum_nexus",
+    "name": "Administratum Nexus",
+    "timing": "pre_battle",
+    "limits": "controlled; active if selected",
+    "effect_text": "Before the battle begins, the controlling player gains +1 Command Point. Command Points gained this way may exceed normal starting limits."
+  },
+  {
+    "id": "fortress_complex",
+    "name": "Fortress Complex",
+    "timing": "in_battle",
+    "limits": "controlled; active if selected",
+    "effect_text": "Select one Battleline unit in your army. That unit gains +1 to its Armor Save while wholly within your deployment zone (subject to normal save-mod limits)."
+  },
+  {
+    "id": "manufactorum_node",
+    "name": "Manufactorum Node",
+    "timing": "in_battle",
+    "limits": "controlled; active if selected; once per battle",
+    "effect_text": "Once per battle, one unit may add +1 Strength to one of its weapon profiles for a single Shooting or Fight phase. Declare use before making any attack rolls for that phase."
+  },
+  {
+    "id": "hive_ruins",
+    "name": "Hive Ruins",
+    "timing": "in_battle",
+    "limits": "controlled; active if selected",
+    "effect_text": "Units from the controlling army may Advance and Charge during this battle (unless restricted by their datasheets)."
+  },
+  {
+    "id": "void_port",
+    "name": "Void Port",
+    "timing": "pre_battle",
+    "limits": "controlled; active if selected",
+    "effect_text": "Before the battle, select one unit in your army. That unit gains the Deep Strike ability for this battle."
+  },
+  {
+    "id": "medicae_facility",
+    "name": "Medicae Facility",
+    "timing": "campaign_round",
+    "limits": "controlled; once per campaign round",
+    "effect_text": "Once per campaign round, the controlling faction may negate the effects of one Out-of-Action roll made for a unit from that faction (treat as if the OoA result did not apply)."
+  }
+]
