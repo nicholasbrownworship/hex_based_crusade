@@ -21,10 +21,11 @@
       --neu:#64748b;   /* neutral/none */
 
       /* terrain tints */
-      --urban: rgba(59,130,246,.10);
-      --industrial: rgba(245,158,11,.10);
-      --wasteland: rgba(239,68,68,.10);
-      --fortified: rgba(34,197,94,.10);
+      --urban: rgba(59,130,246,.12);
+      --industrial: rgba(245,158,11,.12);
+      --wasteland: rgba(239,68,68,.12);
+      --fortified: rgba(34,197,94,.12);
+      --normal: rgba(255,255,255,.03);
     }
     *{box-sizing:border-box}
     body{
@@ -371,6 +372,9 @@ const ui = {
   viewport: document.getElementById("viewport"),
   hexLayer: document.getElementById("hexLayer"),
   tokenLayer: document.getElementById("tokenLayer"),
+
+  // IMPORTANT: tooltip coordinates should be relative to the map area, not the window.
+  mapWrap: document.querySelector(".mapWrap"),
 };
 
 let baseData = null;     // immutable loaded JSON
@@ -434,7 +438,7 @@ function terrainTint(terrain){
     case "industrial": return "var(--industrial)";
     case "wasteland": return "var(--wasteland)";
     case "fortified": return "var(--fortified)";
-    default: return "rgba(255,255,255,.02)";
+    default: return "var(--normal)";
   }
 }
 
@@ -444,6 +448,65 @@ function factionFill(factionId){
   if(factionId==="attackers") return "rgba(249,115,22,.18)";
   if(factionId==="raiders")   return "rgba(168,85,247,.18)";
   return "rgba(255,255,255,.02)";
+}
+
+// ---------- procedural planet terrain (Imperium feel) ----------
+function hash2(q, r, seed=1337){
+  let x = (q * 374761393) ^ (r * 668265263) ^ seed;
+  x = (x ^ (x >> 13)) * 1274126177;
+  x = x ^ (x >> 16);
+  return ((x >>> 0) / 4294967296);
+}
+
+function pickBaseTerrain(q, r, radius){
+  const d = hexDist({q,r},{q:0,r:0});
+  const n = hash2(q, r);
+
+  // Imperium planet bias: lots of city + industry, wasteland scars, some fortified lines
+  let urbanW = 0.14, indW = 0.16, wasteW = 0.10, fortW = 0.05;
+
+  if(d <= radius*0.30){ urbanW = 0.34; indW = 0.28; wasteW = 0.06; fortW = 0.02; }
+  else if(d <= radius*0.60){ urbanW = 0.20; indW = 0.22; wasteW = 0.12; fortW = 0.04; }
+  else { urbanW = 0.10; indW = 0.14; wasteW = 0.18; fortW = 0.07; }
+
+  // “continents” / megacity-industrial basins (fixed attractors, deterministic)
+  const attractors = [
+    {q:-6, r: 2, t:"urban"},
+    {q: 5, r:-4, t:"industrial"},
+    {q: 2, r: 7, t:"urban"},
+    {q:-2, r:-8, t:"wasteland"},
+    {q: 8, r: 4, t:"industrial"},
+  ];
+
+  for(const a of attractors){
+    const dist = hexDist({q,r}, a);
+    if(dist <= 2){
+      if(a.t === "urban") { urbanW += 0.55; indW += 0.18; }
+      if(a.t === "industrial") { indW += 0.60; urbanW += 0.12; }
+      if(a.t === "wasteland") { wasteW += 0.65; }
+    } else if(dist <= 4){
+      if(a.t === "urban") { urbanW += 0.24; indW += 0.10; }
+      if(a.t === "industrial") { indW += 0.28; wasteW += 0.07; }
+      if(a.t === "wasteland") { wasteW += 0.26; }
+    }
+  }
+
+  // Wasteland “scar ring” around mid-latitudes (gives planet texture)
+  const ring = Math.abs(d - radius*0.55);
+  if(ring < 1.2) wasteW += 0.12;
+
+  // Fortified bias along outer rim (defense lines)
+  if(d > radius*0.82 && (hash2(q, r, 9001) > 0.82)) fortW += 0.20;
+
+  const sum = urbanW + indW + wasteW + fortW;
+  const u = urbanW / sum;
+  const i = indW / sum;
+  const w = wasteW / sum;
+
+  if(n < u) return "urban";
+  if(n < u + i) return "industrial";
+  if(n < u + i + w) return "wasteland";
+  return "fortified";
 }
 
 // ---------- load + state ----------
@@ -456,24 +519,21 @@ async function loadJSON(path){
 function storageKey(mapId){ return `${STORAGE_PREFIX}${mapId}`; }
 
 function buildInitialState(){
-  // Start with “base” tokens and empty control (neutral), then set spawns as controlled for their faction.
-  const { mapLayout, spawns, tokens, installs } = baseData;
+  const { mapLayout, spawns, tokens } = baseData;
 
-  const control = {}; // hexKey -> factionId
-  // if you want spawns permanently controlled, mark them:
+  const control = {};
   for(const sp of spawns){
     control[hexKey(sp.q, sp.r)] = sp.faction_id;
   }
 
-  // tokens
-  const tokenState = tokens.map(t=>({ ...t })); // includes q,r,status,faction_id, etc
+  const tokenState = tokens.map(t=>({ ...t }));
 
   return {
     map_id: mapLayout.map_id,
     version: mapLayout.version || "v1",
     control,
     tokens: tokenState,
-    pendingBattles: [], // {atHexKey, tokenA, tokenB, createdAt}
+    pendingBattles: [],
   };
 }
 
@@ -483,7 +543,6 @@ function loadStateOrInit(){
   if(!raw) return buildInitialState();
   try{
     const parsed = JSON.parse(raw);
-    // minimal validation
     if(parsed && parsed.map_id === baseData.mapLayout.map_id) return parsed;
   }catch(e){}
   return buildInitialState();
@@ -507,17 +566,14 @@ function resetState(){
   log("Reset to base data.");
 }
 
-// ---------- map expansion ----------
+// ---------- map expansion + procedural terrain ----------
 function buildFullHexSet(mapLayout){
-  // Your map_layout_v1.json may contain ONLY special hexes, or ALL hexes.
-  // We support both:
-  // - If hexes count matches radius formula (1+3r(r+1)), assume it's full.
-  // - Else, generate full radius grid and overlay listed special hexes.
   const r = Number(mapLayout.radius ?? 0);
   const expected = 1 + 3*r*(r+1);
   const listed = Array.isArray(mapLayout.hexes) ? mapLayout.hexes : [];
 
-  const full = new Map(); // hexKey -> hex obj
+  const full = new Map();
+
   function set(h){
     full.set(hexKey(h.q,h.r), {
       q: h.q, r: h.r,
@@ -528,30 +584,33 @@ function buildFullHexSet(mapLayout){
   }
 
   if(listed.length >= expected){
-    // assume full
     for(const h of listed) set(h);
     return full;
   }
 
-  // generate full radius
+  // generate full radius with planet terrain
   for(let q=-r; q<=r; q++){
     for(let rr=-r; rr<=r; rr++){
       const s = -q-rr;
       if(Math.abs(s) <= r){
-        set({q, r: rr, terrain:"normal", installation_id:null, notes:""});
+        const terrain = pickBaseTerrain(q, rr, r);
+        set({q, r: rr, terrain, installation_id:null, notes:""});
       }
     }
   }
 
-  // overlay listed
+  // overlay listed special hexes (your JSON wins)
   for(const h of listed){
-    full.set(hexKey(h.q,h.r), {
-      q:h.q, r:h.r,
-      terrain: h.terrain ?? full.get(hexKey(h.q,h.r))?.terrain ?? "normal",
-      installation_id: h.installation_id ?? null,
-      notes: h.notes ?? "",
+    const k = hexKey(h.q,h.r);
+    const prev = full.get(k);
+    full.set(k, {
+      q: h.q, r: h.r,
+      terrain: h.terrain ?? prev?.terrain ?? "normal",
+      installation_id: h.installation_id ?? prev?.installation_id ?? null,
+      notes: h.notes ?? prev?.notes ?? "",
     });
   }
+
   return full;
 }
 
@@ -563,18 +622,16 @@ function tokenAtHex(q,r){
 }
 
 function canTraverseHex(q,r, moverFactionId){
-  // v1: can move through friendly-controlled and neutral; cannot move through enemy-controlled.
   const k = hexKey(q,r);
   const owner = state.control[k] || null;
-  if(!owner) return true; // neutral
+  if(!owner) return true;
   if(owner === moverFactionId) return true;
   return false;
 }
 
 function computeReachable(token, budget){
-  // BFS by steps; blocks on enemy-controlled hexes. Allows landing on enemy token hex (battle).
   const start = {q:token.q, r:token.r};
-  const visited = new Map(); // hexKey -> dist
+  const visited = new Map();
   const q0 = [{q:start.q, r:start.r, d:0}];
   visited.set(hexKey(start.q,start.r), 0);
 
@@ -583,15 +640,12 @@ function computeReachable(token, budget){
     if(cur.d === budget) continue;
     for(const nb of neighbors(cur.q, cur.r)){
       const k = hexKey(nb.q, nb.r);
-      if(!hexes.has(k)) continue; // outside map
+      if(!hexes.has(k)) continue;
       const nd = cur.d + 1;
       if(visited.has(k) && visited.get(k) <= nd) continue;
 
-      // traversal rule: can't pass through enemy-controlled hexes
       const passable = canTraverseHex(nb.q, nb.r, token.faction_id);
       if(!passable){
-        // still allow *landing* to attack? In your earlier rules: cannot move through enemy-controlled unless entering to attack.
-        // If it's enemy-controlled, allow it as destination if within budget (but do not expand beyond it).
         visited.set(k, nd);
         continue;
       }
@@ -602,16 +656,14 @@ function computeReachable(token, budget){
   }
 
   visited.delete(hexKey(start.q,start.r));
-  return visited; // map of reachable hexKey -> distance
+  return visited;
 }
 
 function applyMove(token, destQ, destR){
   const destKey = hexKey(destQ, destR);
 
-  // collision?
   const occupant = tokenAtHex(destQ, destR);
   if(occupant && occupant.faction_id !== token.faction_id){
-    // trigger battle
     state.pendingBattles.unshift({
       atHexKey: destKey,
       tokenA: token.token_id,
@@ -619,16 +671,11 @@ function applyMove(token, destQ, destR){
       createdAt: Date.now()
     });
     log(`BATTLE TRIGGER at ${destKey}: ${token.token_id} (${token.faction_id}) vs ${occupant.token_id} (${occupant.faction_id})`);
-    // NOTE: We do NOT auto-resolve winner/loser here. You can add a “Resolve Battle” UI later.
-    // For now, we still move the attacker into the hex to mark collision.
   }
 
-  // move token
   token.q = destQ;
   token.r = destR;
 
-  // control update: winner controls hex after battle. But since we haven't resolved, we won't flip on collision.
-  // If no collision, control flips to mover faction immediately:
   if(!occupant || occupant.faction_id === token.faction_id){
     state.control[destKey] = token.faction_id;
   }
@@ -637,7 +684,7 @@ function applyMove(token, destQ, destR){
 }
 
 // ---------- rendering ----------
-let hexes = null; // Map hexKey -> hex obj
+let hexes = null;
 let installsById = new Map();
 
 function setHUD(){
@@ -672,18 +719,22 @@ function renderHexes(){
     const k = hexKey(h.q,h.r);
     const owner = state.control[k] || null;
 
-    // fill layering: control tint + terrain tint
-    // We'll combine by drawing control as base and terrain as subtle overlay via opacity
-    const control = factionFill(owner);
     const terrain = terrainTint(h.terrain);
-    // Quick blend: use control as fill, then set low opacity stroke; we’ll add terrain via filter? keep simple:
-    // Use terrain as fill, and set control via opacity using a second polygon? Simpler: encode in fill with CSS vars isn't trivial.
-    // We'll just prioritize control tint, and use terrain in notes label via text marker.
-    poly.style.fill = owner ? control : terrain;
+
+    // show terrain always; add subtle owner glow if controlled
+    poly.style.fill = terrain;
+    poly.style.fillOpacity = 1;
 
     poly.classList.add("hex");
     if(reachableSet.has(k)) poly.classList.add("reachable");
     if(selectedHexKey===k) poly.classList.add("selected");
+
+    if(owner){
+      const glow = (FACTIONS[owner]?.color) || "rgba(255,255,255,.12)";
+      poly.style.filter = `drop-shadow(0 0 6px ${glow})`;
+    }else{
+      poly.style.filter = "";
+    }
 
     poly.addEventListener("mouseenter", (e)=>showHexTip(e, h));
     poly.addEventListener("mousemove", (e)=>moveTip(e));
@@ -692,7 +743,6 @@ function renderHexes(){
 
     ui.hexLayer.appendChild(poly);
 
-    // Installation label
     if(h.installation_id){
       const txt = document.createElementNS("http://www.w3.org/2000/svg","text");
       txt.setAttribute("x", x);
@@ -707,12 +757,6 @@ function renderHexes(){
       mini.classList.add("hexMini");
       mini.textContent = `${h.q},${h.r}`;
       ui.hexLayer.appendChild(mini);
-    }else{
-      // optional coord mini for debugging (comment out if you dislike it)
-      // const mini = document.createElementNS("http://www.w3.org/2000/svg","text");
-      // mini.setAttribute("x", x); mini.setAttribute("y", y);
-      // mini.classList.add("hexMini"); mini.textContent = `${h.q},${h.r}`;
-      // ui.hexLayer.appendChild(mini);
     }
   }
 }
@@ -769,7 +813,6 @@ function renderTokens(){
 }
 
 function tokenGlyph(t){
-  // short label on token (last char or number)
   const m = String(t.token_id).match(/(\d+)$/);
   if(m) return m[1];
   return t.token_id.slice(-1).toUpperCase();
@@ -824,11 +867,12 @@ function showTokenTip(evt, t){
 }
 
 function moveTip(evt){
-  const pad = 14;
-  const x = evt.clientX + pad;
-  const y = evt.clientY + pad;
+  const pad = 8;
+  const rect = ui.mapWrap.getBoundingClientRect();
+  const x = evt.clientX - rect.left + pad;
+  const y = evt.clientY - rect.top + pad;
   ui.tip.style.left = x + "px";
-  ui.tip.style.top = y + "px";
+  ui.tip.style.top  = y + "px";
 }
 
 function hideTip(){
@@ -878,21 +922,17 @@ function onHexClick(h){
   const t = selectedTokenId ? tokenById(selectedTokenId) : null;
 
   if(t && moveBudget != null){
-    // attempt move
     if(!reachableSet.has(k)){
       log(`Not reachable: ${k}`);
       renderAll();
       return;
     }
     applyMove(t, h.q, h.r);
-    // after moving, exit move mode
     endMove();
-    // re-render after endMove clears reachables
     renderAll();
     return;
   }
 
-  // no move action: just select hex
   renderAll();
 }
 
@@ -906,7 +946,6 @@ function applyTransform(){
 }
 
 ui.svg.addEventListener("mousedown", (e)=>{
-  // pan by dragging blank space
   if(e.button !== 0) return;
   isPanning = true;
   panStart = { x:e.clientX, y:e.clientY, vx:view.x, vy:view.y };
@@ -930,8 +969,7 @@ ui.svg.addEventListener("wheel", (e)=>{
   applyTransform();
 },{passive:false});
 
-// stop svg clicks from selecting weirdly
-ui.svg.addEventListener("click", ()=>{ /* clicking blank area does nothing */ });
+ui.svg.addEventListener("click", ()=>{});
 
 // ---------- wiring ----------
 ui.rollD6Btn.addEventListener("click", ()=>rollMovement("d6"));
@@ -950,17 +988,10 @@ async function init(){
     ]);
 
     baseData = { mapLayout, spawns, tokens, installs };
-
-    // installations index
     installsById = new Map((installs||[]).map(x=>[x.id, x]));
-
-    // build hex set (full radius or overlay)
     hexes = buildFullHexSet(mapLayout);
-
-    // load state
     state = loadStateOrInit();
 
-    // initial camera center
     view = { x:0, y:0, scale:1 };
     applyTransform();
 
