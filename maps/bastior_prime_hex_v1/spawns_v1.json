@@ -1,5 +1,5 @@
 [
-  { "faction_id": "defenders", "label": "Defenders Spawn", "q": -6, "r": 6 },
+  { "faction_id": "defenders", "label": "Defenders Spawn", "q": -6, "r": 12 },
   { "faction_id": "attackers", "label": "Attackers Spawn", "q": 6, "r": 0 },
-  { "faction_id": "raiders", "label": "Raiders Spawn", "q": 0, "r": -6 }
+  { "faction_id": "raiders", "label": "Raiders Spawn", "q": 0, "r": -12 }
 ]
