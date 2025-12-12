@@ -1,143 +1,29 @@
 {
   "map_id": "bastior_prime_hex_v1",
-  "name": "Bastior Prime (Test Map)",
-  "version": "v1",
+  "name": "Bastior Prime (Expanded Test Map)",
+  "version": "v1.1",
   "coord_system": "axial",
-  "radius": 2,
+  "radius": 6,
+  "movement_recommendation": "D6 (or D3 for slower campaigns)",
+  "installation_selection_rule": "Each faction may select up to TWO controlled installations to be Active per battle.",
   "hexes": [
-    {
-      "q": -2,
-      "r": 0,
-      "terrain": "fortified",
-      "installation_id": "fortress_complex",
-      "notes": ""
-    },
-    {
-      "q": -2,
-      "r": 1,
-      "terrain": "normal",
-      "installation_id": null,
-      "notes": ""
-    },
-    {
-      "q": -2,
-      "r": 2,
-      "terrain": "normal",
-      "installation_id": null,
-      "notes": ""
-    },
-    {
-      "q": -1,
-      "r": -1,
-      "terrain": "normal",
-      "installation_id": null,
-      "notes": ""
-    },
-    {
-      "q": -1,
-      "r": 0,
-      "terrain": "normal",
-      "installation_id": null,
-      "notes": ""
-    },
-    {
-      "q": -1,
-      "r": 1,
-      "terrain": "urban",
-      "installation_id": "medicae_facility",
-      "notes": ""
-    },
-    {
-      "q": -1,
-      "r": 2,
-      "terrain": "normal",
-      "installation_id": null,
-      "notes": ""
-    },
-    {
-      "q": 0,
-      "r": -2,
-      "terrain": "normal",
-      "installation_id": null,
-      "notes": ""
-    },
-    {
-      "q": 0,
-      "r": -1,
-      "terrain": "normal",
-      "installation_id": null,
-      "notes": ""
-    },
-    {
-      "q": 0,
-      "r": 0,
-      "terrain": "urban",
-      "installation_id": "administratum_nexus",
-      "notes": ""
-    },
-    {
-      "q": 0,
-      "r": 1,
-      "terrain": "normal",
-      "installation_id": null,
-      "notes": ""
-    },
-    {
-      "q": 0,
-      "r": 2,
-      "terrain": "industrial",
-      "installation_id": "manufactorum_node",
-      "notes": ""
-    },
-    {
-      "q": 1,
-      "r": -2,
-      "terrain": "normal",
-      "installation_id": null,
-      "notes": ""
-    },
-    {
-      "q": 1,
-      "r": -1,
-      "terrain": "industrial",
-      "installation_id": "void_port",
-      "notes": ""
-    },
-    {
-      "q": 1,
-      "r": 0,
-      "terrain": "normal",
-      "installation_id": null,
-      "notes": ""
-    },
-    {
-      "q": 1,
-      "r": 1,
-      "terrain": "normal",
-      "installation_id": null,
-      "notes": ""
-    },
-    {
-      "q": 2,
-      "r": -2,
-      "terrain": "wasteland",
-      "installation_id": "hive_ruins",
-      "notes": ""
-    },
-    {
-      "q": 2,
-      "r": -1,
-      "terrain": "normal",
-      "installation_id": null,
-      "notes": ""
-    },
-    {
-      "q": 2,
-      "r": 0,
-      "terrain": "normal",
-      "installation_id": null,
-      "notes": ""
-    }
-  ],
-  "installation_selection_rule": "Each faction may select up to TWO controlled installations to be Active per battle."
+    { "q": -6, "r": 0, "terrain": "fortified", "installation_id": "fortress_complex", "notes": "Outer bastion line." },
+    { "q": -5, "r": 1, "terrain": "wasteland", "installation_id": "hive_ruins", "notes": "Collapsed hive district." },
+    { "q": -4, "r": -1, "terrain": "industrial", "installation_id": "manufactorum_node", "notes": "Heavy manufactorum node." },
+    { "q": -3, "r": 2, "terrain": "industrial", "installation_id": "void_port", "notes": "Secondary spaceport and supply corridor." },
+    { "q": -2, "r": 4, "terrain": "urban", "installation_id": "medicae_facility", "notes": "Northern Medicae facility." },
+
+    { "q": 0, "r": 0, "terrain": "urban", "installation_id": "administratum_nexus", "notes": "Planetary command nexus." },
+
+    { "q": 2, "r": -4, "terrain": "urban", "installation_id": "medicae_facility", "notes": "Southern Medicae facility." },
+    { "q": 3, "r": -2, "terrain": "industrial", "installation_id": "void_port", "notes": "Primary spaceport and drop corridors." },
+    { "q": 4, "r": 1, "terrain": "industrial", "installation_id": "manufactorum_node", "notes": "Heavy manufactorum node." },
+    { "q": 5, "r": -1, "terrain": "wasteland", "installation_id": "hive_ruins", "notes": "Collapsed hive district." },
+    { "q": 6, "r": -6, "terrain": "fortified", "installation_id": "fortress_complex", "notes": "Ridge fortress complex." },
+
+    { "q": 0, "r": 6, "terrain": "wasteland", "installation_id": "hive_ruins", "notes": "Sprawl ruins and kill-zones." },
+    { "q": 0, "r": -6, "terrain": "industrial", "installation_id": "manufactorum_node", "notes": "Light manufactorum node." },
+    { "q": 1, "r": 5, "terrain": "industrial", "installation_id": "manufactorum_node", "notes": "Light manufactorum node." },
+    { "q": -1, "r": -5, "terrain": "industrial", "installation_id": "manufactorum_node", "notes": "Light manufactorum node." }
+  ]
 }
