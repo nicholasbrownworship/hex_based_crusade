@@ -1,0 +1,143 @@
+{
+  "map_id": "bastior_prime_hex_v1",
+  "name": "Bastior Prime (Test Map)",
+  "version": "v1",
+  "coord_system": "axial",
+  "radius": 2,
+  "hexes": [
+    {
+      "q": -2,
+      "r": 0,
+      "terrain": "fortified",
+      "installation_id": "fortress_complex",
+      "notes": ""
+    },
+    {
+      "q": -2,
+      "r": 1,
+      "terrain": "normal",
+      "installation_id": null,
+      "notes": ""
+    },
+    {
+      "q": -2,
+      "r": 2,
+      "terrain": "normal",
+      "installation_id": null,
+      "notes": ""
+    },
+    {
+      "q": -1,
+      "r": -1,
+      "terrain": "normal",
+      "installation_id": null,
+      "notes": ""
+    },
+    {
+      "q": -1,
+      "r": 0,
+      "terrain": "normal",
+      "installation_id": null,
+      "notes": ""
+    },
+    {
+      "q": -1,
+      "r": 1,
+      "terrain": "urban",
+      "installation_id": "medicae_facility",
+      "notes": ""
+    },
+    {
+      "q": -1,
+      "r": 2,
+      "terrain": "normal",
+      "installation_id": null,
+      "notes": ""
+    },
+    {
+      "q": 0,
+      "r": -2,
+      "terrain": "normal",
+      "installation_id": null,
+      "notes": ""
+    },
+    {
+      "q": 0,
+      "r": -1,
+      "terrain": "normal",
+      "installation_id": null,
+      "notes": ""
+    },
+    {
+      "q": 0,
+      "r": 0,
+      "terrain": "urban",
+      "installation_id": "administratum_nexus",
+      "notes": ""
+    },
+    {
+      "q": 0,
+      "r": 1,
+      "terrain": "normal",
+      "installation_id": null,
+      "notes": ""
+    },
+    {
+      "q": 0,
+      "r": 2,
+      "terrain": "industrial",
+      "installation_id": "manufactorum_node",
+      "notes": ""
+    },
+    {
+      "q": 1,
+      "r": -2,
+      "terrain": "normal",
+      "installation_id": null,
+      "notes": ""
+    },
+    {
+      "q": 1,
+      "r": -1,
+      "terrain": "industrial",
+      "installation_id": "void_port",
+      "notes": ""
+    },
+    {
+      "q": 1,
+      "r": 0,
+      "terrain": "normal",
+      "installation_id": null,
+      "notes": ""
+    },
+    {
+      "q": 1,
+      "r": 1,
+      "terrain": "normal",
+      "installation_id": null,
+      "notes": ""
+    },
+    {
+      "q": 2,
+      "r": -2,
+      "terrain": "wasteland",
+      "installation_id": "hive_ruins",
+      "notes": ""
+    },
+    {
+      "q": 2,
+      "r": -1,
+      "terrain": "normal",
+      "installation_id": null,
+      "notes": ""
+    },
+    {
+      "q": 2,
+      "r": 0,
+      "terrain": "normal",
+      "installation_id": null,
+      "notes": ""
+    }
+  ],
+  "installation_selection_rule": "Each faction may select up to TWO controlled installations to be Active per battle."
+}

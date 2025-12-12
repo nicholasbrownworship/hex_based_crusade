@@ -1,0 +1,26 @@
+[
+  {
+    "token_id": "def_1",
+    "player_name": "Player 1",
+    "faction_id": "defenders",
+    "q": -2,
+    "r": 2,
+    "status": "active"
+  },
+  {
+    "token_id": "atk_1",
+    "player_name": "Player 2",
+    "faction_id": "attackers",
+    "q": 2,
+    "r": -1,
+    "status": "active"
+  },
+  {
+    "token_id": "rai_1",
+    "player_name": "Player 3",
+    "faction_id": "raiders",
+    "q": 0,
+    "r": -2,
+    "status": "active"
+  }
+]
