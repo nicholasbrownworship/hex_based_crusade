@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Hex Crusade Map</title>
 
-  <!-- ✅ Import map fixes bare module specifiers like "three" -->
+  <!-- Import map: allows "three" bare specifier imports -->
   <script type="importmap">
   {
     "imports": {
@@ -126,7 +126,7 @@
       overflow:hidden;
     }
 
-    /* ✅ 3D canvas behind the SVG */
+    /* 3D canvas behind SVG */
     #threeCanvas{
       position:absolute;
       inset:0;
@@ -136,14 +136,8 @@
       pointer-events:none;
     }
 
-    /* SVG stays on top */
-    svg{
-      position:relative;
-      z-index:1;
-      width:100%;
-      height:100%;
-      display:block;
-    }
+    /* SVG on top */
+    svg{ width:100%; height:100%; display:block; position:relative; z-index:1; }
 
     .topbar{
       position:absolute;
@@ -202,7 +196,6 @@
     .tip .s{ color:var(--muted); font-size:12px; margin-bottom:8px; }
     .tip .b{ font-size:12px; line-height:1.35; color:#dbe7ff; white-space:pre-wrap; }
 
-    /* SVG */
     .hex{
       stroke: rgba(255,255,255,.14);
       stroke-width: 1;
@@ -345,10 +338,10 @@
       <div class="b" id="tipBody"></div>
     </div>
 
-    <!-- ✅ 3D terrain layer -->
     <canvas id="threeCanvas"></canvas>
 
-    <svg id="svg" viewBox="-900 -650 1800 1300" aria-label="Hex map">
+    <!-- ✅ make aspect behavior explicit -->
+    <svg id="svg" viewBox="-900 -650 1800 1300" preserveAspectRatio="xMidYMid meet" aria-label="Hex map">
       <g id="viewport">
         <g id="hexLayer"></g>
         <g id="controlLayer"></g>
@@ -382,13 +375,10 @@
   const STORAGE_PREFIX = "hexCrusadeState::";
   const HEX_SIZE = 30;
 
-  // ✅ Your current assets in GLB/
   const TERRAIN_ASSETS = {
     normal:     { type:"obj", url:"GLB/normal.obj" },
     fortified:  { type:"stl", url:"GLB/fortified.stl" },
     industrial: { type:"stl", url:"GLB/industrial.stl" },
-
-    // not provided yet -> fallback to normal
     urban:      { type:"fallback" },
     wasteland:  { type:"fallback" },
   };
@@ -439,7 +429,6 @@
   let reachableSet = new Set();
   let selectedHexKey = null;
 
-  // For path control:
   let lastReachParents = new Map(); // hexKey -> parentKey
 
   /* -------------------------
@@ -559,20 +548,16 @@
   }
   function fanOffset(index, count){
     if(count <= 1) return {dx:0, dy:0};
-
     const ring1 = Math.min(count, 6);
     const ring2 = Math.max(0, count - 6);
-
     const radius1 = 16;
     const radius2 = 28;
-
     const angles6 = [270, 330, 30, 90, 150, 210];
 
     if(index < ring1){
       const a = angles6[index % 6] * (Math.PI/180);
       return { dx: Math.cos(a) * radius1, dy: Math.sin(a) * radius1 };
     }
-
     const idx2 = index - 6;
     const a = (idx2 * (360 / Math.max(1, ring2))) * (Math.PI/180);
     return { dx: Math.cos(a) * radius2, dy: Math.sin(a) * radius2 };
@@ -583,12 +568,10 @@
   ------------------------- */
   function buildInitialState(){
     const { mapLayout, spawns, tokens } = baseData;
-
     const control = {};
     for(const sp of spawns){
       control[hexKey(sp.q, sp.r)] = sp.faction_id;
     }
-
     return {
       map_id: mapLayout.map_id,
       version: mapLayout.version || "v1",
@@ -658,7 +641,6 @@
       }
     }
 
-    // overlay listed specials
     for(const h of listed){
       full.set(hexKey(h.q,h.r), {
         q:h.q, r:h.r,
@@ -687,7 +669,6 @@
 
   function computeReachable(token, budget){
     const startKey = hexKey(token.q, token.r);
-
     const dist = new Map();
     const parent = new Map();
 
@@ -725,13 +706,11 @@
   function reconstructPath(startKey, endKey, parentMap){
     const path = [];
     let cur = endKey;
-
     while(cur && cur !== startKey){
       path.push(cur);
       cur = parentMap.get(cur);
     }
     if(cur !== startKey) return null;
-
     path.push(startKey);
     path.reverse();
     return path;
@@ -765,10 +744,9 @@
         tokenB: occupant.token_id,
         createdAt: Date.now()
       });
-      log(`BATTLE TRIGGER at ${destKey}: ${token.token_id} (${token.faction_id}) vs ${occupant.token_id} (${occupant.faction_id})`);
-      log(`Control updated along path (${path.length-1} traveled hexes); destination awaits battle result.`);
+      log(`BATTLE TRIGGER at ${destKey}: ${token.token_id} vs ${occupant.token_id}`);
     }else{
-      log(`Moved ${token.token_id} → ${destKey} (control updated along path: ${path.length} hexes)`);
+      log(`Moved ${token.token_id} → ${destKey}`);
     }
   }
 
@@ -1039,7 +1017,7 @@
   function applyTransform(){
     ui.viewport.setAttribute("transform", `translate(${view.x} ${view.y}) scale(${view.scale})`);
 
-    // ✅ Keep 3D tiles aligned with SVG pan/zoom
+    // Keep 3D aligned (same transform)
     if(three.tileGroup){
       three.tileGroup.position.set(view.x, view.y, 0);
       three.tileGroup.scale.set(view.scale, view.scale, 1);
@@ -1070,7 +1048,7 @@
   },{passive:false});
 
   /* =========================================================
-     ✅ THREE.JS TERRAIN MODELS (OBJ/STL) — ADDED
+     THREE.JS TERRAIN MODELS (ALIGNMENT FIXED)
      ========================================================= */
   const three = {
     renderer:null,
@@ -1082,33 +1060,63 @@
     cache: new Map(),
   };
 
+  const VIEWBOX = { left:-900, right:900, top:650, bottom:-650, width:1800, height:1300 };
+
   function initThree(){
     const canvas = document.getElementById("threeCanvas");
     three.renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
     three.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
 
-    // Scene + ortho camera matches your SVG viewBox world
     three.scene = new THREE.Scene();
-    three.camera = new THREE.OrthographicCamera(-900, 900, 650, -650, 0.1, 5000);
-    three.camera.position.set(0, -900, 900);
-    three.camera.lookAt(0,0,0);
 
-    three.scene.add(new THREE.AmbientLight(0xffffff, 0.95));
-    const dir = new THREE.DirectionalLight(0xffffff, 0.9);
-    dir.position.set(600, -800, 1200);
+    // ✅ Camera is now top-down, axis-aligned with SVG X/Y
+    three.camera = new THREE.OrthographicCamera(VIEWBOX.left, VIEWBOX.right, VIEWBOX.top, VIEWBOX.bottom, -2000, 2000);
+    three.camera.position.set(0, 0, 1200);
+    three.camera.lookAt(0, 0, 0);
+    three.camera.up.set(0, 1, 0);
+
+    three.scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+    dir.position.set(400, 300, 900); // ✅ Z-positive, still top-down-ish
     three.scene.add(dir);
 
     three.tileGroup = new THREE.Group();
     three.scene.add(three.tileGroup);
 
-    const resize = ()=>{
+    function resizeToMatchSVGMeet(){
       const w = canvas.clientWidth || canvas.parentElement.clientWidth;
       const h = canvas.clientHeight || canvas.parentElement.clientHeight;
       three.renderer.setSize(w, h, false);
+
+      // Mimic SVG preserveAspectRatio="meet" behavior
+      const aspectCanvas = w / h;
+      const aspectVB = VIEWBOX.width / VIEWBOX.height;
+
+      if(aspectCanvas >= aspectVB){
+        // canvas is wider: expand left/right
+        const scale = aspectCanvas / aspectVB;
+        const halfW = (VIEWBOX.width * scale) / 2;
+        const halfH = VIEWBOX.height / 2;
+        three.camera.left = -halfW;
+        three.camera.right = halfW;
+        three.camera.top = halfH;
+        three.camera.bottom = -halfH;
+      }else{
+        // canvas is taller: expand top/bottom
+        const scale = aspectVB / aspectCanvas;
+        const halfW = VIEWBOX.width / 2;
+        const halfH = (VIEWBOX.height * scale) / 2;
+        three.camera.left = -halfW;
+        three.camera.right = halfW;
+        three.camera.top = halfH;
+        three.camera.bottom = -halfH;
+      }
+
       three.camera.updateProjectionMatrix();
-    };
-    window.addEventListener("resize", resize);
-    resize();
+    }
+
+    window.addEventListener("resize", resizeToMatchSVGMeet);
+    resizeToMatchSVGMeet();
 
     (function loop(){
       requestAnimationFrame(loop);
@@ -1127,16 +1135,14 @@
 
   function centerAndScaleToHex(obj3d){
     const box = new THREE.Box3().setFromObject(obj3d);
-    const size = new THREE.Vector3();
-    box.getSize(size);
+    const size = new THREE.Vector3(); box.getSize(size);
     const maxDim = Math.max(size.x, size.y, size.z);
     if(!isFinite(maxDim) || maxDim <= 1e-6) return;
 
-    const center = new THREE.Vector3();
-    box.getCenter(center);
+    const center = new THREE.Vector3(); box.getCenter(center);
     obj3d.position.sub(center);
 
-    const target = HEX_SIZE * 1.6; // tweak later if you want
+    const target = HEX_SIZE * 1.6;
     const s = target / maxDim;
     obj3d.scale.setScalar(s);
   }
@@ -1145,11 +1151,9 @@
     const key = `obj::${url}`;
     if(three.cache.has(key)) return three.cache.get(key).clone(true);
 
-    const obj = await new Promise((resolve, reject)=>{
-      three.objLoader.load(url, resolve, undefined, reject);
-    });
+    const obj = await new Promise((resolve, reject)=> three.objLoader.load(url, resolve, undefined, reject));
 
-    obj.traverse((n)=>{
+    obj.traverse(n=>{
       if(n.isMesh){
         if(!n.material){
           n.material = new THREE.MeshStandardMaterial({ roughness:0.95, metalness:0.0 });
@@ -1165,10 +1169,7 @@
     const key = `stl::${url}`;
     if(three.cache.has(key)) return three.cache.get(key).clone(true);
 
-    const geo = await new Promise((resolve, reject)=>{
-      three.stlLoader.load(url, resolve, undefined, reject);
-    });
-
+    const geo = await new Promise((resolve, reject)=> three.stlLoader.load(url, resolve, undefined, reject));
     const mat = new THREE.MeshStandardMaterial({ roughness:0.95, metalness:0.0 });
     const mesh = new THREE.Mesh(geo, mat);
 
@@ -1200,15 +1201,14 @@
       try{
         const model = await loadTerrainModel(terrain);
 
-        // Rotate to lay flat for top-down map
-        model.rotation.x = Math.PI / 2;
+        // ✅ DO NOT rotate the whole tile group into a different plane.
+        // If a specific asset is sideways, we can rotate that terrain only later.
+        // model.rotation.x = 0;
 
         centerAndScaleToHex(model);
 
-        // place in same world space as the hex
-        model.position.x += x;
-        model.position.y += y;
-        model.position.z = -5; // slightly behind SVG
+        // align with SVG world coordinates directly
+        model.position.set(x, y, -20);
 
         three.tileGroup.add(model);
         ok++;
@@ -1217,11 +1217,8 @@
       }
     }
 
-    log(`3D tiles built: ${ok} ok, ${fail} failed.`);
-    if(fail) log(`If failed>0: check Console for 404/paths (GLB folder case matters on GitHub Pages).`);
-
-    // ensure current pan/zoom applied
     applyTransform();
+    log(`3D tiles built: ${ok} ok, ${fail} failed.`);
   }
 
   /* -------------------------
@@ -1257,14 +1254,13 @@
       log("Loaded map + data.");
       log("Rule: Control is applied to EVERY hex traveled through.");
 
-      // ✅ Build 3D tiles AFTER we have hexes
       await buildTerrainTiles();
 
     }catch(err){
       console.error(err);
       ui.versionPill.textContent = "error";
       log(`ERROR: ${err.message}`);
-      log("Confirm file paths exist (relative paths for GitHub Pages). Also: must run on http(s), not file://");
+      log("Confirm file paths exist and you are running on http(s), not file://");
     }
   }
 
