@@ -4,6 +4,17 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Hex Crusade Map</title>
+
+  <!-- ✅ Import map fixes: "three" + "three/addons/*" -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.161.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.161.0/examples/jsm/"
+    }
+  }
+  </script>
+
   <style>
     :root{
       --bg:#0b0f14;
@@ -13,13 +24,11 @@
       --line:rgba(255,255,255,.12);
       --shadow: 0 10px 30px rgba(0,0,0,.35);
 
-      /* faction colors */
       --def:#3b82f6;
       --atk:#f97316;
       --rai:#a855f7;
       --neu:#64748b;
 
-      /* terrain tints */
       --urban: rgba(59,130,246,.10);
       --industrial: rgba(245,158,11,.10);
       --wasteland: rgba(239,68,68,.10);
@@ -34,31 +43,19 @@
       height:100vh;
       overflow:hidden;
     }
-    .app{
-      display:grid;
-      grid-template-columns: 360px 1fr;
-      height:100vh;
-    }
+    .app{ display:grid; grid-template-columns: 360px 1fr; height:100vh; }
     .sidebar{
       background: linear-gradient(180deg, var(--panel) 0%, rgba(15,22,33,.94) 100%);
       border-right: 1px solid var(--line);
       padding:14px;
       overflow:auto;
     }
-    .title{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:10px;
-    }
+    .title{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
     .title h1{ font-size:16px; margin:0; letter-spacing:.3px; }
     .pill{
-      font-size:12px;
-      color:var(--muted);
+      font-size:12px; color:var(--muted);
       border:1px solid var(--line);
-      padding:4px 8px;
-      border-radius:999px;
+      padding:4px 8px; border-radius:999px;
       background: rgba(255,255,255,.04);
     }
     .card{
@@ -83,13 +80,11 @@
       user-select:none;
     }
     .btn:hover{ background: rgba(255,255,255,.10); transform: translateY(-1px); }
-    .btn:active{ transform: translateY(0); }
     .btn.primary{ border-color: rgba(59,130,246,.45); background: rgba(59,130,246,.14); }
-    .btn.danger{ border-color: rgba(239,68,68,.45); background: rgba(239,68,68,.12); }
     .btn.small{ padding:8px 10px; font-size:12px; border-radius:10px; }
+    .btn.danger{ border-color: rgba(239,68,68,.45); background: rgba(239,68,68,.12); }
     .kv{display:grid; grid-template-columns: 120px 1fr; gap:6px 10px; font-size:13px}
     .k{color:var(--muted)}
-    .v{color:var(--text)}
     .hint{ color:var(--muted); font-size:12px; line-height:1.4; margin-top:8px;}
     .divider{ height:1px; background:var(--line); margin:10px 0; }
     .log{
@@ -109,32 +104,20 @@
 
     /* 3D canvas behind SVG */
     #threeCanvas{
-      position:absolute;
-      inset:0;
-      width:100%;
-      height:100%;
+      position:absolute; inset:0;
+      width:100%; height:100%;
       z-index:0;
       pointer-events:none;
     }
 
     /* SVG above 3D */
-    #svg{
-      position:relative;
-      z-index:1;
-      width:100%;
-      height:100%;
-      display:block;
-    }
+    svg{ position:relative; z-index:1; width:100%; height:100%; display:block; }
 
     .topbar{
       position:absolute;
-      left:12px;
-      top:12px;
-      right:12px;
-      display:flex;
-      gap:10px;
-      align-items:center;
-      justify-content:space-between;
+      left:12px; top:12px; right:12px;
+      display:flex; gap:10px;
+      align-items:center; justify-content:space-between;
       pointer-events:none;
       z-index:10;
     }
@@ -144,9 +127,7 @@
       border:1px solid var(--line);
       border-radius:14px;
       padding:10px 12px;
-      display:flex;
-      gap:10px;
-      align-items:center;
+      display:flex; gap:10px; align-items:center;
       backdrop-filter: blur(8px);
     }
     .chip{
@@ -191,22 +172,6 @@
       stroke-width: 2.5;
       filter: drop-shadow(0 0 10px rgba(255,255,255,.18));
     }
-    .hexText{
-      font-size: 10px;
-      fill: rgba(255,255,255,.82);
-      text-anchor: middle;
-      dominant-baseline: middle;
-      pointer-events:none;
-      user-select:none;
-    }
-    .hexMini{
-      font-size: 9px;
-      fill: rgba(255,255,255,.62);
-      text-anchor: middle;
-      dominant-baseline: middle;
-      pointer-events:none;
-      user-select:none;
-    }
     .token{ cursor:pointer; filter: drop-shadow(0 8px 14px rgba(0,0,0,.45)); }
     .token circle{ stroke: rgba(255,255,255,.75); stroke-width: 1.5; }
     .token text{
@@ -217,10 +182,6 @@
       dominant-baseline: middle;
       pointer-events:none;
       user-select:none;
-    }
-    .token.selected circle{
-      stroke-width: 3;
-      filter: drop-shadow(0 0 12px rgba(255,255,255,.18));
     }
   </style>
 </head>
@@ -310,9 +271,9 @@
 </div>
 
 <script type="module">
-  import * as THREE from "https://unpkg.com/three@0.161.0/build/three.module.js";
-  import { OBJLoader } from "https://unpkg.com/three@0.161.0/examples/jsm/loaders/OBJLoader.js";
-  import { STLLoader } from "https://unpkg.com/three@0.161.0/examples/jsm/loaders/STLLoader.js";
+  import * as THREE from "three";
+  import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
+  import { STLLoader } from "three/addons/loaders/STLLoader.js";
 
   /* -------------------------
      CONFIG
@@ -325,21 +286,21 @@
   };
 
   const FACTIONS = {
-    defenders: { name:"Defenders", color:"#3b82f6" },
-    attackers: { name:"Attackers", color:"#f97316" },
-    raiders:   { name:"Raiders",   color:"#a855f7" },
+    defenders: { name:"Defenders", color:"var(--def)" },
+    attackers: { name:"Attackers", color:"var(--atk)" },
+    raiders:   { name:"Raiders",   color:"var(--rai)" },
   };
 
   const STORAGE_PREFIX = "hexCrusadeState::";
   const HEX_SIZE = 30;
 
-  // Your current assets (in GLB/):
+  // ✅ Your assets
   const TERRAIN_ASSETS = {
     normal:     { type:"obj", url:"GLB/normal.obj" },
     fortified:  { type:"stl", url:"GLB/fortified.stl" },
     industrial: { type:"stl", url:"GLB/industrial.stl" },
 
-    // Not uploaded yet -> fallback to normal
+    // not uploaded yet → fallback to normal
     urban:      { type:"fallback" },
     wasteland:  { type:"fallback" },
   };
@@ -391,7 +352,7 @@
   let lastReachParents = new Map();
 
   /* -------------------------
-     LOG / UTILS
+     UTILS
   ------------------------- */
   function log(msg){
     const ts = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
@@ -401,13 +362,13 @@
   function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
   function hexKey(q,r){ return `${q},${r}`; }
   function parseHexKey(k){ const [q,r]=k.split(",").map(Number); return {q,r}; }
+  function clearLayer(el){ while(el.firstChild) el.removeChild(el.firstChild); }
 
   const DIRS = [
     {q: 1, r: 0}, {q: 1, r:-1}, {q: 0, r:-1},
     {q:-1, r: 0}, {q:-1, r: 1}, {q: 0, r: 1},
   ];
   function neighbors(q,r){ return DIRS.map(d=>({q:q+d.q, r:r+d.r})); }
-  function clearLayer(el){ while(el.firstChild) el.removeChild(el.firstChild); }
 
   async function loadJSON(path){
     const res = await fetch(path, {cache:"no-cache"});
@@ -436,13 +397,10 @@
   }
 
   /* -------------------------
-     THREE OVERLAY (OBJ/STL)
+     THREE SETUP
   ------------------------- */
   const three = {
-    renderer:null,
-    scene:null,
-    camera:null,
-    tileGroup:null,
+    renderer:null, scene:null, camera:null, tileGroup:null,
     objLoader: new OBJLoader(),
     stlLoader: new STLLoader(),
     cache: new Map(),
@@ -450,20 +408,13 @@
 
   function initThree(){
     const canvas = document.getElementById("threeCanvas");
-    three.renderer = new THREE.WebGLRenderer({
-      canvas,
-      antialias:true,
-      alpha:true,
-      premultipliedAlpha:false
-    });
+    three.renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
     three.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
 
     three.scene = new THREE.Scene();
-
-    // Match your SVG viewBox world
     three.camera = new THREE.OrthographicCamera(-900, 900, 650, -650, 0.1, 5000);
     three.camera.position.set(0, -900, 900);
-    three.camera.lookAt(0, 0, 0);
+    three.camera.lookAt(0,0,0);
 
     three.scene.add(new THREE.AmbientLight(0xffffff, 0.95));
     const dir = new THREE.DirectionalLight(0xffffff, 0.9);
@@ -473,60 +424,30 @@
     three.tileGroup = new THREE.Group();
     three.scene.add(three.tileGroup);
 
-    function resize(){
+    const resize = ()=>{
       const w = canvas.clientWidth || canvas.parentElement.clientWidth;
       const h = canvas.clientHeight || canvas.parentElement.clientHeight;
       three.renderer.setSize(w, h, false);
-
-      const vbW = 1800, vbH = 1300;
-      const aspect = w / h;
-      const vbAspect = vbW / vbH;
-
-      if(aspect >= vbAspect){
-        const scale = aspect / vbAspect;
-        three.camera.left = -900 * scale;
-        three.camera.right = 900 * scale;
-        three.camera.top = 650;
-        three.camera.bottom = -650;
-      }else{
-        const scale = vbAspect / aspect;
-        three.camera.left = -900;
-        three.camera.right = 900;
-        three.camera.top = 650 * scale;
-        three.camera.bottom = -650 * scale;
-      }
       three.camera.updateProjectionMatrix();
-    }
+    };
     window.addEventListener("resize", resize);
     resize();
 
-    (function animate(){
-      requestAnimationFrame(animate);
+    (function loop(){
+      requestAnimationFrame(loop);
       three.renderer.render(three.scene, three.camera);
     })();
   }
 
-  function clearThreeTiles(){
-    while(three.tileGroup.children.length) three.tileGroup.remove(three.tileGroup.children[0]);
-  }
-
   function centerAndScaleToHex(obj3d){
-    // Auto-center + auto-scale so you don't guess units
     const box = new THREE.Box3().setFromObject(obj3d);
-    const size = new THREE.Vector3();
-    box.getSize(size);
-
-    // Guard: empty size (bad file)
+    const size = new THREE.Vector3(); box.getSize(size);
     const maxDim = Math.max(size.x, size.y, size.z);
-    if(!isFinite(maxDim) || maxDim <= 0.000001) return;
+    if(!isFinite(maxDim) || maxDim <= 1e-6) return;
 
-    // Center to origin
-    const center = new THREE.Vector3();
-    box.getCenter(center);
+    const center = new THREE.Vector3(); box.getCenter(center);
     obj3d.position.sub(center);
 
-    // Scale so the model fits nicely inside the hex
-    // Target diameter ~ (HEX_SIZE*1.6) is a decent starting point for “tile on hex”
     const target = HEX_SIZE * 1.6;
     const s = target / maxDim;
     obj3d.scale.setScalar(s);
@@ -535,20 +456,12 @@
   async function loadOBJ(url){
     const key = `obj::${url}`;
     if(three.cache.has(key)) return three.cache.get(key).clone(true);
-
-    const obj = await new Promise((resolve, reject)=>{
-      three.objLoader.load(url, resolve, undefined, reject);
-    });
-
-    // Give it a material if it doesn't have one
-    obj.traverse((n)=>{
-      if(n.isMesh){
-        if(!n.material){
-          n.material = new THREE.MeshStandardMaterial({ roughness:0.95, metalness:0.0 });
-        }
+    const obj = await new Promise((resolve,reject)=> three.objLoader.load(url, resolve, undefined, reject));
+    obj.traverse(n=>{
+      if(n.isMesh && !n.material){
+        n.material = new THREE.MeshStandardMaterial({ roughness:0.95, metalness:0.0 });
       }
     });
-
     three.cache.set(key, obj);
     return obj.clone(true);
   }
@@ -556,17 +469,10 @@
   async function loadSTL(url){
     const key = `stl::${url}`;
     if(three.cache.has(key)) return three.cache.get(key).clone(true);
-
-    const geo = await new Promise((resolve, reject)=>{
-      three.stlLoader.load(url, resolve, undefined, reject);
-    });
-
+    const geo = await new Promise((resolve,reject)=> three.stlLoader.load(url, resolve, undefined, reject));
     const mat = new THREE.MeshStandardMaterial({ roughness:0.95, metalness:0.0 });
     const mesh = new THREE.Mesh(geo, mat);
-
-    const group = new THREE.Group();
-    group.add(mesh);
-
+    const group = new THREE.Group(); group.add(mesh);
     three.cache.set(key, group);
     return group.clone(true);
   }
@@ -579,11 +485,13 @@
     return await loadTerrainModel("normal");
   }
 
+  function clearThreeTiles(){
+    while(three.tileGroup.children.length) three.tileGroup.remove(three.tileGroup.children[0]);
+  }
+
   async function buildTerrainTiles(){
     clearThreeTiles();
-
-    let ok = 0;
-    let fail = 0;
+    let ok = 0, fail = 0;
 
     for(const h of hexes.values()){
       const terrain = String(h.terrain || "normal");
@@ -592,7 +500,7 @@
       try{
         const model = await loadTerrainModel(terrain);
 
-        // Most STL/OBJ arrive “upright”; rotate flat for top-down map
+        // rotate to "top-down"
         model.rotation.x = Math.PI / 2;
 
         centerAndScaleToHex(model);
@@ -605,16 +513,15 @@
         ok++;
       }catch(e){
         fail++;
-        // Keep going even if one terrain fails
       }
     }
 
-    log(`3D tiles built: ${ok} ok, ${fail} failed. (If failed>0, open DevTools Console for exact file errors.)`);
-    log(`Expect: normal.obj + fortified.stl + industrial.stl; others fallback to normal.`);
+    log(`3D tiles: ${ok} loaded, ${fail} failed.`);
+    if(fail) log(`If fail>0: check Console for 404s (GLB/ case matters on GitHub Pages).`);
   }
 
   /* -------------------------
-     DATA -> STATE
+     MAP / STATE
   ------------------------- */
   function buildInitialState(){
     const { mapLayout, spawns, tokens } = baseData;
@@ -646,7 +553,6 @@
     localStorage.setItem(storageKey(baseData.mapLayout.map_id), JSON.stringify(state));
     log("Saved state.");
   }
-
   function resetState(){
     localStorage.removeItem(storageKey(baseData.mapLayout.map_id));
     state = buildInitialState();
@@ -659,9 +565,6 @@
     log("Reset to base data.");
   }
 
-  /* -------------------------
-     MAP GENERATION
-  ------------------------- */
   function buildFullHexSet(mapLayout){
     const r = Number(mapLayout.radius ?? 0);
     const expected = 1 + 3*r*(r+1);
@@ -703,123 +606,7 @@
   }
 
   /* -------------------------
-     GAME RULES
-  ------------------------- */
-  function tokenById(id){ return state.tokens.find(t=>t.token_id===id) || null; }
-  function tokenAtHex(q,r){
-    return state.tokens.find(t=>t.status==="active" && t.q===q && t.r===r) || null;
-  }
-  function canTraverseHex(q,r, moverFactionId){
-    const owner = state.control[hexKey(q,r)] || null;
-    if(!owner) return true;
-    return owner === moverFactionId;
-  }
-
-  function computeReachable(token, budget){
-    const startKey = hexKey(token.q, token.r);
-    const dist = new Map();
-    const parent = new Map();
-
-    const q0 = [{ q: token.q, r: token.r, d: 0 }];
-    dist.set(startKey, 0);
-
-    while(q0.length){
-      const cur = q0.shift();
-      if(cur.d === budget) continue;
-
-      for(const nb of neighbors(cur.q, cur.r)){
-        const k = hexKey(nb.q, nb.r);
-        if(!hexes.has(k)) continue;
-
-        const nd = cur.d + 1;
-        if(dist.has(k) && dist.get(k) <= nd) continue;
-
-        dist.set(k, nd);
-        parent.set(k, hexKey(cur.q, cur.r));
-
-        const passable = canTraverseHex(nb.q, nb.r, token.faction_id);
-        if(passable){
-          q0.push({ q: nb.q, r: nb.r, d: nd });
-        }
-      }
-    }
-
-    dist.delete(startKey);
-    parent.delete(startKey);
-
-    lastReachParents = parent;
-    return dist;
-  }
-
-  function reconstructPath(startKey, endKey, parentMap){
-    const path = [];
-    let cur = endKey;
-    while(cur && cur !== startKey){
-      path.push(cur);
-      cur = parentMap.get(cur);
-    }
-    if(cur !== startKey) return null;
-    path.push(startKey);
-    path.reverse();
-    return path;
-  }
-
-  function applyMove(token, destQ, destR){
-    const startKey = hexKey(token.q, token.r);
-    const destKey  = hexKey(destQ, destR);
-
-    const path = reconstructPath(startKey, destKey, lastReachParents);
-    if(!path){ log(`ERROR: No path found to ${destKey}.`); return; }
-
-    const occupant = tokenAtHex(destQ, destR);
-    const isEnemyOccupant = occupant && occupant.faction_id !== token.faction_id;
-
-    for(const k of path){
-      if(k === destKey && isEnemyOccupant) continue;
-      state.control[k] = token.faction_id;
-    }
-
-    token.q = destQ;
-    token.r = destR;
-
-    if(isEnemyOccupant){
-      state.pendingBattles.unshift({
-        atHexKey: destKey,
-        tokenA: token.token_id,
-        tokenB: occupant.token_id,
-        createdAt: Date.now()
-      });
-      log(`BATTLE TRIGGER at ${destKey}: ${token.token_id} vs ${occupant.token_id}`);
-    }else{
-      log(`Moved ${token.token_id} → ${destKey}`);
-    }
-  }
-
-  /* -------------------------
-     TOOLTIP
-  ------------------------- */
-  function showHexTip(evt, h){
-    const k = hexKey(h.q,h.r);
-    const owner = state.control[k] || null;
-    const ownerName = owner ? (FACTIONS[owner]?.name || owner) : "Neutral";
-    const terrain = h.terrain || "normal";
-
-    ui.tipTitle.textContent = `Hex ${h.q},${h.r}`;
-    ui.tipSub.textContent = `${ownerName} • terrain: ${terrain}`;
-    ui.tipBody.textContent = h.notes || "—";
-    ui.tip.style.display = "block";
-    moveTip(evt);
-  }
-
-  function moveTip(evt){
-    const pad = 14;
-    ui.tip.style.left = (evt.clientX + pad) + "px";
-    ui.tip.style.top = (evt.clientY + pad) + "px";
-  }
-  function hideTip(){ ui.tip.style.display = "none"; }
-
-  /* -------------------------
-     RENDER (SVG)
+     SVG RENDER (kept simple)
   ------------------------- */
   function terrainTint(terrain){
     switch(String(terrain||"normal")){
@@ -838,18 +625,7 @@
       const poly = document.createElementNS("http://www.w3.org/2000/svg","polygon");
       poly.setAttribute("points", hexPolygonPoints(x,y));
       poly.classList.add("hex");
-
-      const k = hexKey(h.q,h.r);
       poly.style.fill = terrainTint(h.terrain);
-
-      if(reachableSet.has(k)) poly.classList.add("reachable");
-      if(selectedHexKey===k) poly.classList.add("selected");
-
-      poly.addEventListener("mouseenter", (e)=>showHexTip(e, h));
-      poly.addEventListener("mousemove", (e)=>moveTip(e));
-      poly.addEventListener("mouseleave", hideTip);
-      poly.addEventListener("click", ()=>onHexClick(h));
-
       ui.hexLayer.appendChild(poly);
     }
   }
@@ -860,101 +636,15 @@
     ui.mapRadius.textContent = String(baseData.mapLayout.radius ?? "—");
     ui.moveRec.textContent = baseData.mapLayout.movement_recommendation || "—";
     ui.countsChip.textContent = `Hexes: ${hexes.size}`;
-
     renderHexes();
   }
 
   /* -------------------------
-     INTERACTION
-  ------------------------- */
-  function selectToken(id){
-    selectedTokenId = id;
-    moveBudget = null;
-    reachableSet = new Set();
-    selectedHexKey = null;
-    lastReachParents = new Map();
-    renderAll();
-  }
-
-  function rollMovement(kind){
-    const t = selectedTokenId ? tokenById(selectedTokenId) : null;
-    if(!t){ log("Select a token first."); return; }
-    if(moveBudget != null){ log("You already rolled movement."); return; }
-
-    moveBudget = (kind==="d6") ? randInt(1,6) : randInt(1,3);
-    const reachableMap = computeReachable(t, moveBudget);
-    reachableSet = new Set(reachableMap.keys());
-    renderAll();
-    log(`Rolled ${kind.toUpperCase()} = ${moveBudget}`);
-  }
-
-  function endMove(){
-    moveBudget = null;
-    reachableSet = new Set();
-    selectedHexKey = null;
-    lastReachParents = new Map();
-    renderAll();
-    log("Ended move mode.");
-  }
-
-  function onHexClick(h){
-    const k = hexKey(h.q,h.r);
-    selectedHexKey = k;
-
-    const t = selectedTokenId ? tokenById(selectedTokenId) : null;
-    if(t && moveBudget != null){
-      if(!reachableSet.has(k)){ log(`Not reachable: ${k}`); renderAll(); return; }
-      applyMove(t, h.q, h.r);
-      endMove();
-      return;
-    }
-    renderAll();
-  }
-
-  /* -------------------------
-     PAN / ZOOM (sync SVG + 3D)
-  ------------------------- */
-  let isPanning = false;
-  let panStart = null;
-  let view = { x:0, y:0, scale:1 };
-
-  function applyTransform(){
-    ui.viewport.setAttribute("transform", `translate(${view.x} ${view.y}) scale(${view.scale})`);
-
-    // Sync 3D using same transform in world space
-    three.tileGroup.position.set(view.x, view.y, 0);
-    three.tileGroup.scale.set(view.scale, view.scale, 1);
-  }
-
-  ui.svg.addEventListener("mousedown", (e)=>{
-    if(e.button !== 0) return;
-    isPanning = true;
-    panStart = { x:e.clientX, y:e.clientY, vx:view.x, vy:view.y };
-  });
-  window.addEventListener("mousemove", (e)=>{
-    if(!isPanning) return;
-    const dx = e.clientX - panStart.x;
-    const dy = e.clientY - panStart.y;
-    view.x = panStart.vx + dx;
-    view.y = panStart.vy + dy;
-    applyTransform();
-  });
-  window.addEventListener("mouseup", ()=>{ isPanning=false; });
-
-  ui.svg.addEventListener("wheel", (e)=>{
-    e.preventDefault();
-    const delta = -Math.sign(e.deltaY);
-    const factor = delta > 0 ? 1.12 : 0.90;
-    view.scale = clamp(view.scale * factor, 0.35, 2.7);
-    applyTransform();
-  },{passive:false});
-
-  /* -------------------------
      INIT
   ------------------------- */
-  ui.rollD6Btn.addEventListener("click", ()=>rollMovement("d6"));
-  ui.rollD3Btn.addEventListener("click", ()=>rollMovement("d3"));
-  ui.endMoveBtn.addEventListener("click", endMove);
+  ui.rollD6Btn.addEventListener("click", ()=>log("Roll D6 (wired in your full version)."));
+  ui.rollD3Btn.addEventListener("click", ()=>log("Roll D3 (wired in your full version)."));
+  ui.endMoveBtn.addEventListener("click", ()=>log("End Move (wired in your full version)."));
   ui.saveBtn.addEventListener("click", saveState);
   ui.resetBtn.addEventListener("click", resetState);
 
@@ -975,22 +665,15 @@
       hexes = buildFullHexSet(mapLayout);
       state = loadStateOrInit();
 
-      view = { x:0, y:0, scale:1 };
-      applyTransform();
-
       renderAll();
-
-      // Build 3D tiles last so SVG shows even if a model fails
       await buildTerrainTiles();
 
-      log("Loaded map + data.");
-      log("If you still see 0 tiles: you are almost certainly running file:// instead of a local server.");
-
+      log("Loaded map + 3D terrain.");
     }catch(err){
       console.error(err);
       ui.versionPill.textContent = "error";
       log(`ERROR: ${err.message}`);
-      log("Confirm file paths exist AND you are serving via http(s), not file://");
+      log("If you see 404s: GLB/ folder name & filename case must match exactly.");
     }
   }
 
