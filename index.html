@@ -115,6 +115,25 @@
       overflow:hidden;
     }
 
+    /* 3D canvas behind SVG */
+    #threeCanvas{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      z-index:0;
+      pointer-events:none; /* keep all interaction on SVG */
+    }
+
+    /* Keep SVG above 3D */
+    #svg{
+      position:relative;
+      z-index:1;
+      width:100%;
+      height:100%;
+      display:block;
+    }
+
     .topbar{
       position:absolute;
       left:12px;
@@ -173,7 +192,6 @@
     .tip .b{ font-size:12px; line-height:1.35; color:#dbe7ff; white-space:pre-wrap; }
 
     /* SVG */
-    svg{ width:100%; height:100%; display:block; }
     .hex{
       stroke: rgba(255,255,255,.14);
       stroke-width: 1;
@@ -316,6 +334,9 @@
       <div class="b" id="tipBody"></div>
     </div>
 
+    <!-- 3D layer -->
+    <canvas id="threeCanvas"></canvas>
+
     <svg id="svg" viewBox="-900 -650 1800 1300" aria-label="Hex map">
       <g id="viewport">
         <g id="hexLayer"></g>
@@ -325,6 +346,16 @@
     </svg>
   </main>
 </div>
+
+<!-- Three.js + loaders (OBJ + STL) -->
+<script type="module">
+  import * as THREE from "https://unpkg.com/three@0.161.0/build/three.module.js";
+  import { OBJLoader } from "https://unpkg.com/three@0.161.0/examples/jsm/loaders/OBJLoader.js";
+  import { STLLoader } from "https://unpkg.com/three@0.161.0/examples/jsm/loaders/STLLoader.js";
+
+  // Expose to the main script below
+  window.__THREE__ = { THREE, OBJLoader, STLLoader };
+</script>
 
 <script>
 /* -------------------------
@@ -345,6 +376,24 @@ const FACTIONS = {
 
 const STORAGE_PREFIX = "hexCrusadeState::";
 const HEX_SIZE = 30;
+
+/**
+ * Your current assets (in GLB/ folder):
+ * - GLB/normal.obj
+ * - GLB/fortified.stl
+ * - GLB/industrial.stl
+ *
+ * Anything not provided yet falls back to "normal".
+ */
+const TERRAIN_ASSETS = {
+  normal:     { type:"obj", url:"GLB/normal.obj" },
+  fortified:  { type:"stl", url:"GLB/fortified.stl" },
+  industrial: { type:"stl", url:"GLB/industrial.stl" },
+
+  // Not uploaded yet:
+  urban:      { type:"fallback" },
+  wasteland:  { type:"fallback" },
+};
 
 /* -------------------------
    DOM
@@ -396,6 +445,21 @@ let selectedHexKey = null;
 let lastReachParents = new Map(); // hexKey -> parentKey
 
 /* -------------------------
+   THREE (3D overlay)
+------------------------- */
+let three = {
+  ready: false,
+  renderer: null,
+  scene: null,
+  camera: null,
+  tileGroup: null,
+  objLoader: null,
+  stlLoader: null,
+  cache: new Map(),      // key -> original object
+  useXRotate: true,      // quick toggle if your tiles come in sideways
+};
+
+/* -------------------------
    UTILS
 ------------------------- */
 function log(msg){
@@ -440,6 +504,217 @@ function hexPolygonPoints(cx,cy){
     pts.push(`${x.toFixed(2)},${y.toFixed(2)}`);
   }
   return pts.join(" ");
+}
+
+/* -------------------------
+   THREE helpers
+------------------------- */
+function waitForThreeReady(timeoutMs=8000){
+  return new Promise((resolve, reject)=>{
+    const start = Date.now();
+    const t = setInterval(()=>{
+      if(window.__THREE__ && window.__THREE__.THREE){
+        clearInterval(t);
+        resolve();
+      }else if(Date.now()-start > timeoutMs){
+        clearInterval(t);
+        reject(new Error("Three.js module failed to load (check unpkg availability / CSP)."));
+      }
+    }, 50);
+  });
+}
+
+async function initThree(){
+  await waitForThreeReady();
+  const { THREE, OBJLoader, STLLoader } = window.__THREE__;
+
+  const canvas = document.getElementById("threeCanvas");
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true,
+    alpha: true,
+    premultipliedAlpha: false
+  });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+
+  const scene = new THREE.Scene();
+
+  // Orthographic camera aligned to your SVG viewBox (-900..900, -650..650)
+  const camera = new THREE.OrthographicCamera(-900, 900, 650, -650, 0.1, 5000);
+  camera.position.set(0, -900, 900);
+  camera.lookAt(0, 0, 0);
+
+  // Lights (simple + forgiving)
+  scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.85);
+  dir.position.set(600, -800, 1200);
+  scene.add(dir);
+
+  const tileGroup = new THREE.Group();
+  scene.add(tileGroup);
+
+  const objLoader = new OBJLoader();
+  const stlLoader = new STLLoader();
+
+  three = {
+    ready: true,
+    renderer,
+    scene,
+    camera,
+    tileGroup,
+    objLoader,
+    stlLoader,
+    cache: new Map(),
+    useXRotate: true,
+  };
+
+  function resize(){
+    const w = canvas.clientWidth || canvas.parentElement.clientWidth;
+    const h = canvas.clientHeight || canvas.parentElement.clientHeight;
+    renderer.setSize(w, h, false);
+
+    // Keep camera bounds matching viewBox aspect (1800x1300)
+    const vbW = 1800, vbH = 1300;
+    const aspect = w / h;
+    const vbAspect = vbW / vbH;
+
+    if(aspect >= vbAspect){
+      const scale = aspect / vbAspect;
+      camera.left = -900 * scale;
+      camera.right = 900 * scale;
+      camera.top = 650;
+      camera.bottom = -650;
+    }else{
+      const scale = vbAspect / aspect;
+      camera.left = -900;
+      camera.right = 900;
+      camera.top = 650 * scale;
+      camera.bottom = -650 * scale;
+    }
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  (function animate(){
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+  })();
+}
+
+function cloneDeep(obj3d){
+  return obj3d.clone(true);
+}
+
+async function loadOBJ(url){
+  const key = `obj::${url}`;
+  if(three.cache.has(key)) return cloneDeep(three.cache.get(key));
+
+  const obj = await new Promise((resolve, reject)=>{
+    three.objLoader.load(url, resolve, undefined, reject);
+  });
+
+  // Ensure meshes have a material (OBJ often does, but not guaranteed)
+  const { THREE } = window.__THREE__;
+  obj.traverse((child)=>{
+    if(child && child.isMesh){
+      if(!child.material){
+        child.material = new THREE.MeshStandardMaterial({ roughness: 0.95, metalness: 0.0 });
+      }
+      child.castShadow = false;
+      child.receiveShadow = false;
+    }
+  });
+
+  three.cache.set(key, obj);
+  return cloneDeep(obj);
+}
+
+async function loadSTL(url, terrain){
+  const key = `stl::${url}`;
+  if(three.cache.has(key)) return cloneDeep(three.cache.get(key));
+
+  const geo = await new Promise((resolve, reject)=>{
+    three.stlLoader.load(url, resolve, undefined, reject);
+  });
+
+  const { THREE } = window.__THREE__;
+  const mat = new THREE.MeshStandardMaterial({
+    roughness: 0.95,
+    metalness: 0.0,
+    // You can tint per-terrain later if you want.
+  });
+
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.castShadow = false;
+  mesh.receiveShadow = false;
+
+  const group = new THREE.Group();
+  group.add(mesh);
+
+  three.cache.set(key, group);
+  return cloneDeep(group);
+}
+
+async function loadTerrainModel(terrain){
+  const entry = TERRAIN_ASSETS[terrain] || TERRAIN_ASSETS.normal;
+  if(entry.type === "fallback") return loadTerrainModel("normal");
+
+  if(entry.type === "obj") return await loadOBJ(entry.url);
+  if(entry.type === "stl") return await loadSTL(entry.url, terrain);
+
+  return await loadTerrainModel("normal");
+}
+
+function clearThreeTiles(){
+  if(!three.ready) return;
+  // Dispose geometry/materials we created from STL
+  for(const child of three.tileGroup.children){
+    child.traverse((n)=>{
+      if(n.isMesh){
+        if(n.geometry) n.geometry.dispose?.();
+        if(n.material && n.material.dispose) n.material.dispose();
+      }
+    });
+  }
+  while(three.tileGroup.children.length) three.tileGroup.remove(three.tileGroup.children[0]);
+}
+
+async function buildTerrainTiles(){
+  if(!three.ready) return;
+  clearThreeTiles();
+
+  // IMPORTANT: this is placeholder scaling; you WILL tweak this based on your files
+  // because STL/OBJ units vary wildly.
+  const DEFAULT_SCALE = 0.08; // start small; adjust after you see it
+  const DEFAULT_Z = -2;       // slightly "under" the SVG overlays
+
+  for(const h of hexes.values()){
+    const terrain = String(h.terrain || "normal");
+    const { x, y } = axialToPixel(h.q, h.r);
+
+    let model = null;
+    try{
+      model = await loadTerrainModel(terrain);
+    }catch(e){
+      // If something fails, fall back to normal (and keep going)
+      log(`3D load failed for terrain "${terrain}". Using normal. (${e.message || e})`);
+      model = await loadTerrainModel("normal");
+    }
+
+    model.position.set(x, y, DEFAULT_Z);
+
+    // Most STLs/OBJs come in "standing up" for a top-down map; this rotates them flat.
+    if(three.useXRotate) model.rotation.x = Math.PI / 2;
+
+    // Base scale; if your models look tiny/huge, change DEFAULT_SCALE above.
+    model.scale.set(DEFAULT_SCALE, DEFAULT_SCALE, DEFAULT_SCALE);
+
+    // Slight random rotation to reduce repetition (optional)
+    // model.rotation.z = (Math.PI/3) * randInt(0,5);
+
+    three.tileGroup.add(model);
+  }
 }
 
 /* -------------------------
@@ -1003,6 +1278,12 @@ let view = { x:0, y:0, scale:1 };
 
 function applyTransform(){
   ui.viewport.setAttribute("transform", `translate(${view.x} ${view.y}) scale(${view.scale})`);
+
+  // Sync 3D with same world transform
+  if(three.ready){
+    three.tileGroup.position.set(view.x, view.y, 0);
+    three.tileGroup.scale.set(view.scale, view.scale, 1);
+  }
 }
 
 ui.svg.addEventListener("mousedown", (e)=>{
@@ -1047,10 +1328,19 @@ async function init(){
     ]);
 
     baseData = { mapLayout, spawns, tokens, installs };
-    installsById = new Map((installs||[]).map(x=>[x.id, x]));
+    installsById = new Map((installs||[]).map(x=>[x.id, x ]));
 
     hexes = buildFullHexSet(mapLayout);
     state = loadStateOrInit();
+
+    // Init 3D + place tiles (non-blocking feel but still awaited here so you see errors in log)
+    try{
+      await initThree();
+      await buildTerrainTiles();
+      log("3D terrain tiles: loaded (OBJ/STL).");
+    }catch(e){
+      log(`3D disabled: ${e.message || e}`);
+    }
 
     view = { x:0, y:0, scale:1 };
     applyTransform();
