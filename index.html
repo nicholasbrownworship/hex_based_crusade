@@ -133,7 +133,6 @@
       position:relative;
       overflow:hidden;
     }
-
     .mapWrap::before{
       content:"";
       position:absolute; inset:0;
@@ -186,7 +185,6 @@
       box-shadow: 0 2px 6px rgba(0,0,0,.35) inset;
     }
 
-    /* Tooltip */
     .tip{
       position:absolute;
       pointer-events:none;
@@ -204,7 +202,6 @@
     .tip .s{ color:var(--muted); font-size:12px; margin-bottom:8px; }
     .tip .b{ font-size:12px; line-height:1.35; color:#dbe7ff; white-space:pre-wrap; }
 
-    /* SVG */
     svg{ width:100%; height:100%; display:block; position:relative; z-index:1; }
 
     .hex{
@@ -421,9 +418,6 @@
 </div>
 
 <script>
-/* -------------------------
-   CONFIG
-------------------------- */
 const PATHS = {
   mapLayout:  "maps/bastior_prime_hex_v1/map_layout_v1.json",
   spawns:     "maps/bastior_prime_hex_v1/spawns_v1.json",
@@ -440,10 +434,8 @@ const FACTIONS = {
 const STORAGE_PREFIX = "hexCrusadeState::";
 const HEX_SIZE = 30;
 
-/* -------------------------
-   DOM
-------------------------- */
 const ui = {
+  mapWrap: document.querySelector(".mapWrap"), /* NEW */
   versionPill: document.getElementById("versionPill"),
   mapName: document.getElementById("mapName"),
   mapRadius: document.getElementById("mapRadius"),
@@ -473,9 +465,6 @@ const ui = {
   tokenLayer: document.getElementById("tokenLayer"),
 };
 
-/* -------------------------
-   STATE
-------------------------- */
 let baseData = null;
 let state = null;
 
@@ -486,12 +475,8 @@ let selectedTokenId = null;
 let moveBudget = null;
 let reachableSet = new Set();
 let selectedHexKey = null;
-
 let lastReachParents = new Map();
 
-/* -------------------------
-   UTILS
-------------------------- */
 function log(msg){
   const ts = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
   ui.log.textContent = `[${ts}] ${msg}\n` + ui.log.textContent;
@@ -517,9 +502,6 @@ async function loadJSON(path){
 }
 function storageKey(mapId){ return `${STORAGE_PREFIX}${mapId}`; }
 
-/* -------------------------
-   GEOMETRY
-------------------------- */
 function axialToPixel(q,r){
   const x = HEX_SIZE * Math.sqrt(3) * (q + r/2);
   const y = HEX_SIZE * 3/2 * r;
@@ -536,9 +518,6 @@ function hexPolygonPoints(cx,cy){
   return pts.join(" ");
 }
 
-/* -------------------------
-   VISUALS
-------------------------- */
 function terrainTint(terrain){
   switch(String(terrain||"normal")){
     case "urban": return "rgba(59,130,246,.08)";
@@ -591,9 +570,6 @@ function tokenGlyph(t){
   return (t.token_id || "?").slice(0,2).toUpperCase();
 }
 
-/* -------------------------
-   STACKING FAN OUT
-------------------------- */
 function groupTokensByHex(tokens){
   const m = new Map();
   for(const t of tokens){
@@ -625,17 +601,12 @@ function fanOffset(index, count){
   return { dx: Math.cos(a) * radius2, dy: Math.sin(a) * radius2 };
 }
 
-/* -------------------------
-   DATA -> STATE
-------------------------- */
 function buildInitialState(){
   const { mapLayout, spawns, tokens } = baseData;
-
   const control = {};
   for(const sp of spawns){
     control[hexKey(sp.q, sp.r)] = sp.faction_id;
   }
-
   return {
     map_id: mapLayout.map_id,
     version: mapLayout.version || "v1",
@@ -644,7 +615,6 @@ function buildInitialState(){
     pendingBattles: [],
   };
 }
-
 function loadStateOrInit(){
   const key = storageKey(baseData.mapLayout.map_id);
   const raw = localStorage.getItem(key);
@@ -655,12 +625,10 @@ function loadStateOrInit(){
   }catch(e){}
   return buildInitialState();
 }
-
 function saveState(){
   localStorage.setItem(storageKey(baseData.mapLayout.map_id), JSON.stringify(state));
   log("Saved state.");
 }
-
 function resetState(){
   localStorage.removeItem(storageKey(baseData.mapLayout.map_id));
   state = buildInitialState();
@@ -673,9 +641,6 @@ function resetState(){
   log("Reset to base data.");
 }
 
-/* -------------------------
-   MAP GENERATION
-------------------------- */
 function buildFullHexSet(mapLayout){
   const r = Number(mapLayout.radius ?? 0);
   const expected = 1 + 3*r*(r+1);
@@ -716,21 +681,15 @@ function buildFullHexSet(mapLayout){
   return full;
 }
 
-/* -------------------------
-   GAME RULES
-------------------------- */
 function tokenById(id){ return state.tokens.find(t=>t.token_id===id) || null; }
-
 function tokenAtHex(q,r){
   return state.tokens.find(t=>t.status==="active" && t.q===q && t.r===r) || null;
 }
-
 function canTraverseHex(q,r, moverFactionId){
   const owner = state.control[hexKey(q,r)] || null;
   if(!owner) return true;
   return owner === moverFactionId;
 }
-
 function computeReachable(token, budget){
   const startKey = hexKey(token.q, token.r);
 
@@ -767,7 +726,6 @@ function computeReachable(token, budget){
   lastReachParents = parent;
   return dist;
 }
-
 function reconstructPath(startKey, endKey, parentMap){
   const path = [];
   let cur = endKey;
@@ -782,7 +740,6 @@ function reconstructPath(startKey, endKey, parentMap){
   path.reverse();
   return path;
 }
-
 function applyMove(token, destQ, destR){
   const startKey = hexKey(token.q, token.r);
   const destKey  = hexKey(destQ, destR);
@@ -818,9 +775,7 @@ function applyMove(token, destQ, destR){
   }
 }
 
-/* -------------------------
-   TOOLTIP
-------------------------- */
+/* TOOLTIP */
 function showHexTip(evt, h){
   const k = hexKey(h.q,h.r);
   const owner = state.control[k] || null;
@@ -852,7 +807,6 @@ function showHexTip(evt, h){
   ui.tip.style.display = "block";
   moveTip(evt);
 }
-
 function showTokenTip(evt, t){
   ui.tipTitle.textContent = `Token: ${t.token_id}`;
   ui.tipSub.textContent = `${FACTIONS[t.faction_id]?.name || t.faction_id} • ${t.status}`;
@@ -860,20 +814,17 @@ function showTokenTip(evt, t){
   ui.tip.style.display = "block";
   moveTip(evt);
 }
-
 function moveTip(evt){
-  // tighter to cursor
-  const pad = 6;      // was 14
-  const nudgeX = 2;
-  const nudgeY = 2;
-  ui.tip.style.left = (evt.clientX + pad + nudgeX) + "px";
-  ui.tip.style.top  = (evt.clientY + pad + nudgeY) + "px";
+  const rect = ui.mapWrap.getBoundingClientRect();
+  const pad = 10; // distance from cursor
+  const x = (evt.clientX - rect.left) + pad;
+  const y = (evt.clientY - rect.top) + pad;
+  ui.tip.style.left = x + "px";
+  ui.tip.style.top  = y + "px";
 }
 function hideTip(){ ui.tip.style.display = "none"; }
 
-/* -------------------------
-   RENDER
-------------------------- */
+/* RENDER */
 function setHUD(){
   ui.versionPill.textContent = baseData.mapLayout.version || "v1";
   ui.mapName.textContent = baseData.mapLayout.name || baseData.mapLayout.map_id || "—";
@@ -883,7 +834,6 @@ function setHUD(){
   const instCount = [...hexes.values()].filter(h=>h.installation_id).length;
   ui.countsChip.textContent = `Hexes: ${hexes.size} | Installs: ${instCount}`;
 }
-
 function updateSidebarSelection(){
   const t = selectedTokenId ? tokenById(selectedTokenId) : null;
   ui.selToken.textContent = t
@@ -913,7 +863,6 @@ function renderHexes(){
     poly.addEventListener("mousemove", (e)=>moveTip(e));
     poly.addEventListener("mouseleave", hideTip);
     poly.addEventListener("click", ()=>onHexClick(h));
-
     ui.hexLayer.appendChild(poly);
 
     const bevel1 = document.createElementNS("http://www.w3.org/2000/svg","polygon");
@@ -949,7 +898,6 @@ function renderHexes(){
     }
   }
 }
-
 function renderControlZones(){
   clearLayer(ui.controlLayer);
 
@@ -978,7 +926,6 @@ function renderControlZones(){
     ui.controlLayer.appendChild(poly);
   }
 }
-
 function renderTokens(){
   clearLayer(ui.tokenLayer);
 
@@ -1032,7 +979,6 @@ function renderTokens(){
     });
   }
 }
-
 function renderAll(){
   setHUD();
   updateSidebarSelection();
@@ -1041,9 +987,7 @@ function renderAll(){
   renderTokens();
 }
 
-/* -------------------------
-   INTERACTION
-------------------------- */
+/* INTERACTION */
 function selectToken(id){
   selectedTokenId = id;
   moveBudget = null;
@@ -1055,11 +999,9 @@ function selectToken(id){
   const t = tokenById(id);
   if(t) log(`Selected ${t.token_id} (${t.faction_id})`);
 }
-
 function rollMovement(kind){
   const t = selectedTokenId ? tokenById(selectedTokenId) : null;
   if(!t){ log("Select a token first."); return; }
-
   if(moveBudget != null){
     log("You already rolled movement. Move or click End Move.");
     return;
@@ -1072,7 +1014,6 @@ function rollMovement(kind){
   renderAll();
   log(`Rolled ${kind.toUpperCase()} = ${moveBudget} (reachable hexes highlighted)`);
 }
-
 function endMove(){
   moveBudget = null;
   reachableSet = new Set();
@@ -1081,13 +1022,11 @@ function endMove(){
   renderAll();
   log("Ended move mode.");
 }
-
 function onHexClick(h){
   const k = hexKey(h.q,h.r);
   selectedHexKey = k;
 
   const t = selectedTokenId ? tokenById(selectedTokenId) : null;
-
   if(t && moveBudget != null){
     if(!reachableSet.has(k)){
       log(`Not reachable: ${k}`);
@@ -1098,13 +1037,10 @@ function onHexClick(h){
     endMove();
     return;
   }
-
   renderAll();
 }
 
-/* -------------------------
-   PAN / ZOOM
-------------------------- */
+/* PAN / ZOOM */
 let isPanning = false;
 let panStart = null;
 let view = { x:0, y:0, scale:1 };
@@ -1136,9 +1072,7 @@ ui.svg.addEventListener("wheel", (e)=>{
   applyTransform();
 },{passive:false});
 
-/* -------------------------
-   INIT
-------------------------- */
+/* INIT */
 ui.rollD6Btn.addEventListener("click", ()=>rollMovement("d6"));
 ui.rollD3Btn.addEventListener("click", ()=>rollMovement("d3"));
 ui.endMoveBtn.addEventListener("click", endMove);
@@ -1166,7 +1100,6 @@ async function init(){
     renderAll();
     log("Loaded map + data.");
     log("Rule: Control is applied to EVERY hex traveled through.");
-
   }catch(err){
     console.error(err);
     ui.versionPill.textContent = "error";
@@ -1174,7 +1107,6 @@ async function init(){
     log("Confirm file paths exist (relative paths for GitHub Pages).");
   }
 }
-
 init();
 </script>
 </body>
