@@ -29,7 +29,14 @@
     body{
       margin:0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
-      background: radial-gradient(1200px 800px at 15% 10%, #172033 0%, var(--bg) 55%);
+
+      /* tabletop surface (no image) */
+      background:
+        radial-gradient(1200px 900px at 12% 10%, rgba(255,255,255,.08) 0%, rgba(255,255,255,0) 55%),
+        radial-gradient(1000px 700px at 85% 22%, rgba(255,255,255,.06) 0%, rgba(255,255,255,0) 60%),
+        radial-gradient(900px 800px at 40% 92%, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 55%),
+        repeating-linear-gradient(45deg, rgba(255,255,255,.018) 0 2px, rgba(0,0,0,0) 2px 8px),
+        radial-gradient(1400px 900px at 30% 20%, #1a2233 0%, #0b0f14 58%);
       color:var(--text);
       height:100vh;
       overflow:hidden;
@@ -40,7 +47,7 @@
       height:100vh;
     }
     .sidebar{
-      background: linear-gradient(180deg, var(--panel) 0%, rgba(15,22,33,.94) 100%);
+      background: linear-gradient(180deg, rgba(15,22,33,.98) 0%, rgba(15,22,33,.92) 100%);
       border-right: 1px solid var(--line);
       padding:14px;
       overflow:auto;
@@ -67,42 +74,54 @@
     }
     .card{
       background: rgba(255,255,255,.04);
-      border:1px solid var(--line);
+      border:1px solid rgba(255,255,255,.10);
       border-radius:14px;
       padding:12px;
       box-shadow: var(--shadow);
       margin-bottom:12px;
+      backdrop-filter: blur(6px);
     }
     .row{display:flex; gap:10px; flex-wrap:wrap}
     .btn{
       cursor:pointer;
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.05));
       color:var(--text);
       padding:10px 10px;
       border-radius:12px;
-      font-weight:600;
+      font-weight:700;
       font-size:13px;
-      transition:.15s transform, .15s background;
+      transition:.15s transform, .15s background, .15s box-shadow;
       user-select:none;
+      box-shadow: 0 8px 18px rgba(0,0,0,.22);
     }
-    .btn:hover{ background: rgba(255,255,255,.10); transform: translateY(-1px); }
-    .btn:active{ transform: translateY(0); }
-    .btn.primary{ border-color: rgba(59,130,246,.45); background: rgba(59,130,246,.14); }
-    .btn.danger{ border-color: rgba(239,68,68,.45); background: rgba(239,68,68,.12); }
+    .btn:hover{
+      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(0,0,0,.28);
+    }
+    .btn:active{ transform: translateY(0); box-shadow: 0 6px 16px rgba(0,0,0,.22); }
+    .btn.primary{
+      border-color: rgba(59,130,246,.45);
+      background: linear-gradient(180deg, rgba(59,130,246,.22), rgba(59,130,246,.10));
+    }
+    .btn.danger{
+      border-color: rgba(239,68,68,.45);
+      background: linear-gradient(180deg, rgba(239,68,68,.20), rgba(239,68,68,.08));
+    }
     .btn.small{ padding:8px 10px; font-size:12px; border-radius:10px; }
     .kv{display:grid; grid-template-columns: 120px 1fr; gap:6px 10px; font-size:13px}
     .k{color:var(--muted)}
     .v{color:var(--text)}
     .hint{ color:var(--muted); font-size:12px; line-height:1.4; margin-top:8px;}
-    .divider{ height:1px; background:var(--line); margin:10px 0; }
+    .divider{ height:1px; background:rgba(255,255,255,.12); margin:10px 0; }
 
     .log{
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
       font-size:12px;
       color:#cbd5e1;
       background: rgba(0,0,0,.25);
-      border:1px solid var(--line);
+      border:1px solid rgba(255,255,255,.12);
       border-radius:12px;
       padding:10px;
       max-height: 200px;
@@ -113,6 +132,19 @@
     .mapWrap{
       position:relative;
       overflow:hidden;
+    }
+
+    /* subtle “table glare” over the map area only */
+    .mapWrap::before{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        radial-gradient(900px 600px at 20% 15%, rgba(255,255,255,.08) 0%, rgba(255,255,255,0) 60%),
+        radial-gradient(700px 500px at 85% 30%, rgba(255,255,255,.06) 0%, rgba(255,255,255,0) 62%);
+      pointer-events:none;
+      z-index:2;
+      mix-blend-mode: screen;
+      opacity:.75;
     }
 
     .topbar{
@@ -129,30 +161,30 @@
     }
     .topbar .hud{
       pointer-events:auto;
-      background: rgba(0,0,0,.25);
-      border:1px solid var(--line);
+      background: rgba(0,0,0,.28);
+      border:1px solid rgba(255,255,255,.14);
       border-radius:14px;
       padding:10px 12px;
       display:flex;
       gap:10px;
       align-items:center;
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 12px 26px rgba(0,0,0,.28);
     }
     .chip{
       font-size:12px;
       color:var(--muted);
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
       padding:6px 10px;
       border-radius:999px;
     }
-    .legend{
-      display:flex; gap:8px; flex-wrap:wrap;
-    }
+    .legend{ display:flex; gap:8px; flex-wrap:wrap; }
     .dot{
       width:10px;height:10px;border-radius:999px; display:inline-block; margin-right:6px;
       border:1px solid rgba(255,255,255,.25);
       vertical-align:middle;
+      box-shadow: 0 2px 6px rgba(0,0,0,.35) inset;
     }
 
     /* Tooltip */
@@ -160,44 +192,55 @@
       position:absolute;
       pointer-events:none;
       z-index:20;
-      background: rgba(8,12,18,.92);
-      border:1px solid var(--line);
+      background: rgba(8,12,18,.94);
+      border:1px solid rgba(255,255,255,.14);
       border-radius:12px;
       padding:10px 12px;
       max-width: 340px;
-      box-shadow: var(--shadow);
+      box-shadow: 0 16px 40px rgba(0,0,0,.45);
       display:none;
+      backdrop-filter: blur(10px);
     }
-    .tip .t{ font-weight:700; font-size:13px; margin-bottom:4px; }
+    .tip .t{ font-weight:800; font-size:13px; margin-bottom:4px; }
     .tip .s{ color:var(--muted); font-size:12px; margin-bottom:8px; }
     .tip .b{ font-size:12px; line-height:1.35; color:#dbe7ff; white-space:pre-wrap; }
 
     /* SVG */
-    svg{ width:100%; height:100%; display:block; }
+    svg{ width:100%; height:100%; display:block; position:relative; z-index:1; }
+
+    /* “Physical tile” styling: base + bevel overlays via <defs> filters */
     .hex{
-      stroke: rgba(255,255,255,.14);
+      stroke: rgba(255,255,255,.12);
       stroke-width: 1;
       cursor:pointer;
-      transition: filter .12s, stroke .12s;
+      transition: filter .12s, stroke .12s, opacity .12s;
+      filter: url(#tileShadow);
     }
-    .hex:hover{ stroke: rgba(255,255,255,.35); }
+    .hex:hover{
+      stroke: rgba(255,255,255,.32);
+      filter: url(#tileShadowHover);
+    }
     .hex.reachable{
-      stroke: rgba(59,130,246,.65);
-      stroke-width: 2;
-      filter: drop-shadow(0 0 6px rgba(59,130,246,.35));
+      stroke: rgba(59,130,246,.75);
+      stroke-width: 2.1;
+      filter: url(#tileShadowReach);
     }
     .hex.selected{
-      stroke: rgba(255,255,255,.70);
-      stroke-width: 2.5;
-      filter: drop-shadow(0 0 10px rgba(255,255,255,.18));
+      stroke: rgba(255,255,255,.82);
+      stroke-width: 2.6;
+      filter: url(#tileShadowSelected);
     }
+
     .hexText{
       font-size: 10px;
-      fill: rgba(255,255,255,.82);
+      fill: rgba(255,255,255,.86);
       text-anchor: middle;
       dominant-baseline: middle;
       pointer-events:none;
       user-select:none;
+      paint-order: stroke;
+      stroke: rgba(0,0,0,.45);
+      stroke-width: 2px;
     }
     .hexMini{
       font-size: 9px;
@@ -206,14 +249,19 @@
       dominant-baseline: middle;
       pointer-events:none;
       user-select:none;
+      paint-order: stroke;
+      stroke: rgba(0,0,0,.35);
+      stroke-width: 2px;
     }
+
+    /* Tokens look like physical chips */
     .token{
       cursor:pointer;
-      filter: drop-shadow(0 8px 14px rgba(0,0,0,.45));
+      filter: url(#tokenShadow);
     }
     .token circle{
-      stroke: rgba(255,255,255,.75);
-      stroke-width: 1.5;
+      stroke: rgba(255,255,255,.72);
+      stroke-width: 1.6;
     }
     .token text{
       font-size: 11px;
@@ -224,9 +272,11 @@
       pointer-events:none;
       user-select:none;
     }
+    .token.selected{
+      filter: url(#tokenShadowSelected);
+    }
     .token.selected circle{
       stroke-width: 3;
-      filter: drop-shadow(0 0 12px rgba(255,255,255,.18));
     }
   </style>
 </head>
@@ -317,9 +367,67 @@
     </div>
 
     <svg id="svg" viewBox="-900 -650 1800 1300" aria-label="Hex map">
+      <defs>
+        <!-- Soft shadow for tiles -->
+        <filter id="tileShadow" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="2.5" stdDeviation="2.2" flood-color="rgba(0,0,0,.55)"/>
+        </filter>
+        <filter id="tileShadowHover" x="-40%" y="-40%" width="180%" height="180%">
+          <feDropShadow dx="0" dy="3.0" stdDeviation="2.8" flood-color="rgba(0,0,0,.62)"/>
+          <feDropShadow dx="0" dy="0" stdDeviation="2.4" flood-color="rgba(255,255,255,.08)"/>
+        </filter>
+        <filter id="tileShadowReach" x="-40%" y="-40%" width="180%" height="180%">
+          <feDropShadow dx="0" dy="3.2" stdDeviation="3.0" flood-color="rgba(0,0,0,.62)"/>
+          <feDropShadow dx="0" dy="0" stdDeviation="4.0" flood-color="rgba(59,130,246,.18)"/>
+        </filter>
+        <filter id="tileShadowSelected" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="3.6" stdDeviation="3.4" flood-color="rgba(0,0,0,.70)"/>
+          <feDropShadow dx="0" dy="0" stdDeviation="5.5" flood-color="rgba(255,255,255,.14)"/>
+        </filter>
+
+        <!-- Acrylic control overlay glow -->
+        <filter id="acrylicGlow" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="2.2" result="blur"/>
+          <feMerge>
+            <feMergeNode in="blur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+
+        <!-- Token shadows -->
+        <filter id="tokenShadow" x="-60%" y="-60%" width="220%" height="220%">
+          <feDropShadow dx="0" dy="3.6" stdDeviation="3.0" flood-color="rgba(0,0,0,.58)"/>
+          <feDropShadow dx="0" dy="0" stdDeviation="1.8" flood-color="rgba(255,255,255,.10)"/>
+        </filter>
+        <filter id="tokenShadowSelected" x="-80%" y="-80%" width="260%" height="260%">
+          <feDropShadow dx="0" dy="4.2" stdDeviation="3.4" flood-color="rgba(0,0,0,.65)"/>
+          <feDropShadow dx="0" dy="0" stdDeviation="5.2" flood-color="rgba(255,255,255,.14)"/>
+        </filter>
+
+        <!-- Light direction “bevel” overlays using gradients -->
+        <linearGradient id="bevelLight" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="rgba(255,255,255,.14)"/>
+          <stop offset="0.35" stop-color="rgba(255,255,255,.06)"/>
+          <stop offset="1" stop-color="rgba(0,0,0,.18)"/>
+        </linearGradient>
+        <linearGradient id="bevelDark" x1="1" y1="1" x2="0" y2="0">
+          <stop offset="0" stop-color="rgba(0,0,0,.20)"/>
+          <stop offset="0.45" stop-color="rgba(0,0,0,.08)"/>
+          <stop offset="1" stop-color="rgba(255,255,255,.08)"/>
+        </linearGradient>
+      </defs>
+
       <g id="viewport">
+        <!-- 1) tile base layer -->
         <g id="hexLayer"></g>
+
+        <!-- 2) bevel overlay layer (non-interactive, purely visual) -->
+        <g id="bevelLayer" style="pointer-events:none;"></g>
+
+        <!-- 3) control acrylic overlay -->
         <g id="controlLayer"></g>
+
+        <!-- 4) tokens -->
         <g id="tokenLayer"></g>
       </g>
     </svg>
@@ -374,6 +482,7 @@ const ui = {
   svg: document.getElementById("svg"),
   viewport: document.getElementById("viewport"),
   hexLayer: document.getElementById("hexLayer"),
+  bevelLayer: document.getElementById("bevelLayer"),
   controlLayer: document.getElementById("controlLayer"),
   tokenLayer: document.getElementById("tokenLayer"),
 };
@@ -384,16 +493,15 @@ const ui = {
 let baseData = null;
 let state = null;
 
-let hexes = null;                 // Map hexKey -> hex obj
-let installsById = new Map();     // id -> install json
+let hexes = null;
+let installsById = new Map();
 
 let selectedTokenId = null;
 let moveBudget = null;
 let reachableSet = new Set();
 let selectedHexKey = null;
 
-// For path control:
-let lastReachParents = new Map(); // hexKey -> parentKey
+let lastReachParents = new Map();
 
 /* -------------------------
    UTILS
@@ -446,25 +554,26 @@ function hexPolygonPoints(cx,cy){
    VISUALS
 ------------------------- */
 function terrainTint(terrain){
+  // Keep your existing terrain color language, but slightly deepen for “paint”
   switch(String(terrain||"normal")){
-    case "urban": return "var(--urban)";
-    case "industrial": return "var(--industrial)";
-    case "wasteland": return "var(--wasteland)";
-    case "fortified": return "var(--fortified)";
+    case "urban": return "rgba(59,130,246,.08)";
+    case "industrial": return "rgba(245,158,11,.08)";
+    case "wasteland": return "rgba(239,68,68,.08)";
+    case "fortified": return "rgba(34,197,94,.08)";
     default: return "rgba(255,255,255,.02)";
   }
 }
 
 function controlRGBA(factionId){
-  if(factionId==="defenders") return "rgba(59,130,246,0.22)";
-  if(factionId==="attackers") return "rgba(249,115,22,0.22)";
-  if(factionId==="raiders")   return "rgba(168,85,247,0.22)";
+  if(factionId==="defenders") return "rgba(59,130,246,0.18)";
+  if(factionId==="attackers") return "rgba(249,115,22,0.18)";
+  if(factionId==="raiders")   return "rgba(168,85,247,0.18)";
   return "rgba(255,255,255,0)";
 }
 function controlStrokeRGBA(factionId){
-  if(factionId==="defenders") return "rgba(59,130,246,0.78)";
-  if(factionId==="attackers") return "rgba(249,115,22,0.78)";
-  if(factionId==="raiders")   return "rgba(168,85,247,0.78)";
+  if(factionId==="defenders") return "rgba(59,130,246,0.88)";
+  if(factionId==="attackers") return "rgba(249,115,22,0.88)";
+  if(factionId==="raiders")   return "rgba(168,85,247,0.88)";
   return "rgba(255,255,255,0.2)";
 }
 function isControlBorderHex(q,r,factionId){
@@ -611,7 +720,6 @@ function buildFullHexSet(mapLayout){
     }
   }
 
-  // overlay listed specials
   for(const h of listed){
     full.set(hexKey(h.q,h.r), {
       q:h.q, r:h.r,
@@ -638,15 +746,11 @@ function canTraverseHex(q,r, moverFactionId){
   return owner === moverFactionId;
 }
 
-/**
- * Reachable calculation also stores parent pointers so we can reconstruct the
- * actual travel path used for "control every hex traveled through".
- */
 function computeReachable(token, budget){
   const startKey = hexKey(token.q, token.r);
 
-  const dist = new Map();     // hexKey -> distance
-  const parent = new Map();   // hexKey -> parent hexKey
+  const dist = new Map();
+  const parent = new Map();
 
   const q0 = [{ q: token.q, r: token.r, d: 0 }];
   dist.set(startKey, 0);
@@ -669,7 +773,6 @@ function computeReachable(token, budget){
       if(passable){
         q0.push({ q: nb.q, r: nb.r, d: nd });
       }
-      // Enemy-controlled: allow landing but do not expand beyond it
     }
   }
 
@@ -695,12 +798,6 @@ function reconstructPath(startKey, endKey, parentMap){
   return path;
 }
 
-/**
- * Apply move:
- * - Determine shortest BFS parent path from start -> destination
- * - Set control for ALL hexes traveled through
- * - If destination has enemy token: do NOT flip destination control yet; create pending battle
- */
 function applyMove(token, destQ, destR){
   const startKey = hexKey(token.q, token.r);
   const destKey  = hexKey(destQ, destR);
@@ -714,7 +811,6 @@ function applyMove(token, destQ, destR){
   const occupant = tokenAtHex(destQ, destR);
   const isEnemyOccupant = occupant && occupant.faction_id !== token.faction_id;
 
-  // Flip control along the traveled route. If battle at destination, don't pre-award that final hex.
   for(const k of path){
     if(k === destKey && isEnemyOccupant) continue;
     state.control[k] = token.faction_id;
@@ -811,15 +907,17 @@ function updateSidebarSelection(){
 
 function renderHexes(){
   clearLayer(ui.hexLayer);
+  clearLayer(ui.bevelLayer);
 
   for(const h of hexes.values()){
     const {x,y} = axialToPixel(h.q, h.r);
 
+    const k = hexKey(h.q,h.r);
+
+    // Base tile
     const poly = document.createElementNS("http://www.w3.org/2000/svg","polygon");
     poly.setAttribute("points", hexPolygonPoints(x,y));
     poly.classList.add("hex");
-
-    const k = hexKey(h.q,h.r);
     poly.style.fill = terrainTint(h.terrain);
 
     if(reachableSet.has(k)) poly.classList.add("reachable");
@@ -831,6 +929,23 @@ function renderHexes(){
     poly.addEventListener("click", ()=>onHexClick(h));
 
     ui.hexLayer.appendChild(poly);
+
+    // Bevel overlay (two subtle passes: light + dark)
+    const bevel1 = document.createElementNS("http://www.w3.org/2000/svg","polygon");
+    bevel1.setAttribute("points", hexPolygonPoints(x,y));
+    bevel1.style.fill = "none";
+    bevel1.style.stroke = "url(#bevelLight)";
+    bevel1.style.strokeWidth = "2.3";
+    bevel1.style.opacity = "0.55";
+    ui.bevelLayer.appendChild(bevel1);
+
+    const bevel2 = document.createElementNS("http://www.w3.org/2000/svg","polygon");
+    bevel2.setAttribute("points", hexPolygonPoints(x,y));
+    bevel2.style.fill = "none";
+    bevel2.style.stroke = "url(#bevelDark)";
+    bevel2.style.strokeWidth = "1.8";
+    bevel2.style.opacity = "0.45";
+    ui.bevelLayer.appendChild(bevel2);
 
     if(h.installation_id){
       const txt = document.createElementNS("http://www.w3.org/2000/svg","text");
@@ -864,12 +979,15 @@ function renderControlZones(){
     poly.setAttribute("points", hexPolygonPoints(x,y));
     poly.style.fill = controlRGBA(factionId);
 
+    // Acrylic-like overlay
+    poly.style.opacity = "0.95";
+    poly.style.filter = "url(#acrylicGlow)";
+
     if(isControlBorderHex(q,r,factionId)){
       poly.style.stroke = controlStrokeRGBA(factionId);
-      poly.style.strokeWidth = "2.6";
-      poly.style.filter = "drop-shadow(0 0 6px rgba(0,0,0,.35))";
+      poly.style.strokeWidth = "2.8";
     }else{
-      poly.style.stroke = "rgba(255,255,255,0.06)";
+      poly.style.stroke = "rgba(255,255,255,0.05)";
       poly.style.strokeWidth = "1";
     }
 
@@ -900,10 +1018,19 @@ function renderTokens(){
       if(t.token_id === selectedTokenId) g.classList.add("selected");
       g.setAttribute("transform", `translate(${x},${y})`);
 
+      // outer chip
       const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
       c.setAttribute("r", 13);
       c.style.fill = (FACTIONS[t.faction_id]?.color) || "var(--neu)";
       g.appendChild(c);
+
+      // inner ring highlight for “physical”
+      const ring = document.createElementNS("http://www.w3.org/2000/svg","circle");
+      ring.setAttribute("r", 10.2);
+      ring.style.fill = "none";
+      ring.style.stroke = "rgba(255,255,255,.22)";
+      ring.style.strokeWidth = "2.2";
+      g.appendChild(ring);
 
       const txt = document.createElementNS("http://www.w3.org/2000/svg","text");
       txt.setAttribute("x", 0);
