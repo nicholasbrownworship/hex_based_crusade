@@ -811,12 +811,15 @@ function renderTokens(){
     ui.tokenLayer.appendChild(g);
   }
 }
-
 function tokenGlyph(t){
-  const m = String(t.token_id).match(/(\d+)$/);
-  if(m) return m[1];
-  return t.token_id.slice(-1).toUpperCase();
+  const id = String(t.token_id || "").toLowerCase();
+  if(id.startsWith("def_")) return "D" + (id.split("_")[1] || "");
+  if(id.startsWith("atk_")) return "A" + (id.split("_")[1] || "");
+  if(id.startsWith("rai_")) return "R" + (id.split("_")[1] || "");
+  // fallback
+  return (t.token_id || "?").slice(0,2).toUpperCase();
 }
+
 
 function renderAll(){
   setHUD();
