@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Hex Crusade Map</title>
 
-  <!-- Import map: allows "three" bare specifier imports -->
   <script type="importmap">
   {
     "imports": {
@@ -24,13 +23,11 @@
       --line:rgba(255,255,255,.12);
       --shadow: 0 10px 30px rgba(0,0,0,.35);
 
-      /* faction colors */
-      --def:#3b82f6;   /* defenders */
-      --atk:#f97316;   /* attackers */
-      --rai:#a855f7;   /* raiders */
-      --neu:#64748b;   /* neutral/none */
+      --def:#3b82f6;
+      --atk:#f97316;
+      --rai:#a855f7;
+      --neu:#64748b;
 
-      /* terrain tints */
       --urban: rgba(59,130,246,.10);
       --industrial: rgba(245,158,11,.10);
       --wasteland: rgba(239,68,68,.10);
@@ -45,57 +42,22 @@
       height:100vh;
       overflow:hidden;
     }
-    .app{
-      display:grid;
-      grid-template-columns: 360px 1fr;
-      height:100vh;
-    }
+    .app{ display:grid; grid-template-columns: 360px 1fr; height:100vh; }
     .sidebar{
       background: linear-gradient(180deg, var(--panel) 0%, rgba(15,22,33,.94) 100%);
       border-right: 1px solid var(--line);
       padding:14px;
       overflow:auto;
     }
-    .title{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:10px;
-    }
-    .title h1{
-      font-size:16px;
-      margin:0;
-      letter-spacing:.3px;
-    }
-    .pill{
-      font-size:12px;
-      color:var(--muted);
-      border:1px solid var(--line);
-      padding:4px 8px;
-      border-radius:999px;
-      background: rgba(255,255,255,.04);
-    }
-    .card{
-      background: rgba(255,255,255,.04);
-      border:1px solid var(--line);
-      border-radius:14px;
-      padding:12px;
-      box-shadow: var(--shadow);
-      margin-bottom:12px;
-    }
+    .title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+    .title h1{font-size:16px;margin:0;letter-spacing:.3px;}
+    .pill{font-size:12px;color:var(--muted);border:1px solid var(--line);padding:4px 8px;border-radius:999px;background: rgba(255,255,255,.04);}
+    .card{background: rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow: var(--shadow);margin-bottom:12px;}
     .row{display:flex; gap:10px; flex-wrap:wrap}
     .btn{
-      cursor:pointer;
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.06);
-      color:var(--text);
-      padding:10px 10px;
-      border-radius:12px;
-      font-weight:600;
-      font-size:13px;
-      transition:.15s transform, .15s background;
-      user-select:none;
+      cursor:pointer;border:1px solid var(--line);background: rgba(255,255,255,.06);
+      color:var(--text);padding:10px 10px;border-radius:12px;font-weight:600;font-size:13px;
+      transition:.15s transform, .15s background;user-select:none;
     }
     .btn:hover{ background: rgba(255,255,255,.10); transform: translateY(-1px); }
     .btn:active{ transform: translateY(0); }
@@ -103,53 +65,28 @@
     .btn.danger{ border-color: rgba(239,68,68,.45); background: rgba(239,68,68,.12); }
     .btn.small{ padding:8px 10px; font-size:12px; border-radius:10px; }
     .kv{display:grid; grid-template-columns: 120px 1fr; gap:6px 10px; font-size:13px}
-    .k{color:var(--muted)}
-    .v{color:var(--text)}
+    .k{color:var(--muted)} .v{color:var(--text)}
     .hint{ color:var(--muted); font-size:12px; line-height:1.4; margin-top:8px;}
     .divider{ height:1px; background:var(--line); margin:10px 0; }
-
     .log{
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      font-size:12px;
-      color:#cbd5e1;
-      background: rgba(0,0,0,.25);
-      border:1px solid var(--line);
-      border-radius:12px;
-      padding:10px;
-      max-height: 200px;
-      overflow:auto;
-      white-space: pre-wrap;
+      font-size:12px;color:#cbd5e1;background: rgba(0,0,0,.25);
+      border:1px solid var(--line);border-radius:12px;padding:10px;max-height: 200px;overflow:auto;white-space: pre-wrap;
     }
-
-    .mapWrap{
-      position:relative;
-      overflow:hidden;
-    }
+    .mapWrap{ position:relative; overflow:hidden; }
 
     /* 3D canvas behind SVG */
     #threeCanvas{
-      position:absolute;
-      inset:0;
-      width:100%;
-      height:100%;
-      z-index:0;
-      pointer-events:none;
+      position:absolute; inset:0; width:100%; height:100%;
+      z-index:0; pointer-events:none;
     }
 
-    /* SVG on top */
     svg{ width:100%; height:100%; display:block; position:relative; z-index:1; }
 
     .topbar{
-      position:absolute;
-      left:12px;
-      top:12px;
-      right:12px;
-      display:flex;
-      gap:10px;
-      align-items:center;
-      justify-content:space-between;
-      pointer-events:none;
-      z-index:10;
+      position:absolute; left:12px; top:12px; right:12px;
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      pointer-events:none; z-index:10;
     }
     .topbar .hud{
       pointer-events:auto;
@@ -157,99 +94,36 @@
       border:1px solid var(--line);
       border-radius:14px;
       padding:10px 12px;
-      display:flex;
-      gap:10px;
-      align-items:center;
+      display:flex; gap:10px; align-items:center;
       backdrop-filter: blur(8px);
     }
-    .chip{
-      font-size:12px;
-      color:var(--muted);
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.04);
-      padding:6px 10px;
-      border-radius:999px;
-    }
-    .legend{
-      display:flex; gap:8px; flex-wrap:wrap;
-    }
-    .dot{
-      width:10px;height:10px;border-radius:999px; display:inline-block; margin-right:6px;
-      border:1px solid rgba(255,255,255,.25);
-      vertical-align:middle;
-    }
+    .chip{font-size:12px;color:var(--muted);border:1px solid var(--line);background: rgba(255,255,255,.04);padding:6px 10px;border-radius:999px;}
+    .legend{display:flex; gap:8px; flex-wrap:wrap;}
+    .dot{width:10px;height:10px;border-radius:999px; display:inline-block; margin-right:6px;border:1px solid rgba(255,255,255,.25);vertical-align:middle;}
 
-    /* Tooltip */
     .tip{
-      position:absolute;
-      pointer-events:none;
-      z-index:20;
+      position:absolute; pointer-events:none; z-index:20;
       background: rgba(8,12,18,.92);
       border:1px solid var(--line);
-      border-radius:12px;
-      padding:10px 12px;
-      max-width: 340px;
-      box-shadow: var(--shadow);
+      border-radius:12px; padding:10px 12px;
+      max-width: 340px; box-shadow: var(--shadow);
       display:none;
     }
     .tip .t{ font-weight:700; font-size:13px; margin-bottom:4px; }
     .tip .s{ color:var(--muted); font-size:12px; margin-bottom:8px; }
     .tip .b{ font-size:12px; line-height:1.35; color:#dbe7ff; white-space:pre-wrap; }
 
-    .hex{
-      stroke: rgba(255,255,255,.14);
-      stroke-width: 1;
-      cursor:pointer;
-      transition: filter .12s, stroke .12s;
-    }
+    .hex{ stroke: rgba(255,255,255,.14); stroke-width: 1; cursor:pointer; transition: filter .12s, stroke .12s; }
     .hex:hover{ stroke: rgba(255,255,255,.35); }
-    .hex.reachable{
-      stroke: rgba(59,130,246,.65);
-      stroke-width: 2;
-      filter: drop-shadow(0 0 6px rgba(59,130,246,.35));
-    }
-    .hex.selected{
-      stroke: rgba(255,255,255,.70);
-      stroke-width: 2.5;
-      filter: drop-shadow(0 0 10px rgba(255,255,255,.18));
-    }
-    .hexText{
-      font-size: 10px;
-      fill: rgba(255,255,255,.82);
-      text-anchor: middle;
-      dominant-baseline: middle;
-      pointer-events:none;
-      user-select:none;
-    }
-    .hexMini{
-      font-size: 9px;
-      fill: rgba(255,255,255,.62);
-      text-anchor: middle;
-      dominant-baseline: middle;
-      pointer-events:none;
-      user-select:none;
-    }
-    .token{
-      cursor:pointer;
-      filter: drop-shadow(0 8px 14px rgba(0,0,0,.45));
-    }
-    .token circle{
-      stroke: rgba(255,255,255,.75);
-      stroke-width: 1.5;
-    }
-    .token text{
-      font-size: 11px;
-      font-weight: 900;
-      fill: rgba(0,0,0,.85);
-      text-anchor: middle;
-      dominant-baseline: middle;
-      pointer-events:none;
-      user-select:none;
-    }
-    .token.selected circle{
-      stroke-width: 3;
-      filter: drop-shadow(0 0 12px rgba(255,255,255,.18));
-    }
+    .hex.reachable{ stroke: rgba(59,130,246,.65); stroke-width: 2; filter: drop-shadow(0 0 6px rgba(59,130,246,.35)); }
+    .hex.selected{ stroke: rgba(255,255,255,.70); stroke-width: 2.5; filter: drop-shadow(0 0 10px rgba(255,255,255,.18)); }
+    .hexText{ font-size: 10px; fill: rgba(255,255,255,.82); text-anchor: middle; dominant-baseline: middle; pointer-events:none; user-select:none; }
+    .hexMini{ font-size: 9px; fill: rgba(255,255,255,.62); text-anchor: middle; dominant-baseline: middle; pointer-events:none; user-select:none; }
+
+    .token{ cursor:pointer; filter: drop-shadow(0 8px 14px rgba(0,0,0,.45)); }
+    .token circle{ stroke: rgba(255,255,255,.75); stroke-width: 1.5; }
+    .token text{ font-size: 11px; font-weight: 900; fill: rgba(0,0,0,.85); text-anchor: middle; dominant-baseline: middle; pointer-events:none; user-select:none; }
+    .token.selected circle{ stroke-width: 3; filter: drop-shadow(0 0 12px rgba(255,255,255,.18)); }
   </style>
 </head>
 
@@ -340,7 +214,6 @@
 
     <canvas id="threeCanvas"></canvas>
 
-    <!-- ✅ make aspect behavior explicit -->
     <svg id="svg" viewBox="-900 -650 1800 1300" preserveAspectRatio="xMidYMid meet" aria-label="Hex map">
       <g id="viewport">
         <g id="hexLayer"></g>
@@ -356,9 +229,6 @@
   import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
   import { STLLoader } from "three/addons/loaders/STLLoader.js";
 
-  /* -------------------------
-     CONFIG
-  ------------------------- */
   const PATHS = {
     mapLayout:  "maps/bastior_prime_hex_v1/map_layout_v1.json",
     spawns:     "maps/bastior_prime_hex_v1/spawns_v1.json",
@@ -383,9 +253,22 @@
     wasteland:  { type:"fallback" },
   };
 
-  /* -------------------------
-     DOM
-  ------------------------- */
+  // ✅ Rotation presets so your tiles actually show as "top surfaces"
+  // If any one is wrong, we tweak the ONE terrain, not the whole system.
+  const TERRAIN_ROT = {
+    normal:     { x: -Math.PI/2, y: 0, z: 0 }, // common for Z-up meshes
+    fortified:  { x: -Math.PI/2, y: 0, z: 0 },
+    industrial: { x: -Math.PI/2, y: 0, z: 0 },
+    _default:   { x: -Math.PI/2, y: 0, z: 0 },
+  };
+
+  // ✅ A slight isometric tilt so you can SEE depth
+  const CAMERA_TILT = {
+    pitch: THREE.MathUtils.degToRad(55), // rotate around X
+    yaw:   THREE.MathUtils.degToRad(35), // rotate around Z
+    dist:  1400
+  };
+
   const ui = {
     versionPill: document.getElementById("versionPill"),
     mapName: document.getElementById("mapName"),
@@ -415,32 +298,23 @@
     tokenLayer: document.getElementById("tokenLayer"),
   };
 
-  /* -------------------------
-     STATE
-  ------------------------- */
   let baseData = null;
   let state = null;
-
-  let hexes = null;                 // Map hexKey -> hex obj
-  let installsById = new Map();     // id -> install json
+  let hexes = null;
+  let installsById = new Map();
 
   let selectedTokenId = null;
   let moveBudget = null;
   let reachableSet = new Set();
   let selectedHexKey = null;
+  let lastReachParents = new Map();
 
-  let lastReachParents = new Map(); // hexKey -> parentKey
-
-  /* -------------------------
-     UTILS
-  ------------------------- */
   function log(msg){
     const ts = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
     ui.log.textContent = `[${ts}] ${msg}\n` + ui.log.textContent;
   }
   function clamp(n,a,b){ return Math.max(a, Math.min(b,n)); }
   function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
-
   function hexKey(q,r){ return `${q},${r}`; }
   function parseHexKey(k){ const [q,r]=k.split(",").map(Number); return {q,r}; }
 
@@ -449,7 +323,6 @@
     {q:-1, r: 0}, {q:-1, r: 1}, {q: 0, r: 1},
   ];
   function neighbors(q,r){ return DIRS.map(d=>({q:q+d.q, r:r+d.r})); }
-
   function clearLayer(el){ while(el.firstChild) el.removeChild(el.firstChild); }
 
   async function loadJSON(path){
@@ -459,9 +332,6 @@
   }
   function storageKey(mapId){ return `${STORAGE_PREFIX}${mapId}`; }
 
-  /* -------------------------
-     GEOMETRY
-  ------------------------- */
   function axialToPixel(q,r){
     const x = HEX_SIZE * Math.sqrt(3) * (q + r/2);
     const y = HEX_SIZE * 3/2 * r;
@@ -478,9 +348,6 @@
     return pts.join(" ");
   }
 
-  /* -------------------------
-     VISUALS
-  ------------------------- */
   function terrainTint(terrain){
     switch(String(terrain||"normal")){
       case "urban": return "var(--urban)";
@@ -533,9 +400,6 @@
     return (t.token_id || "?").slice(0,2).toUpperCase();
   }
 
-  /* -------------------------
-     STACKING FAN OUT
-  ------------------------- */
   function groupTokensByHex(tokens){
     const m = new Map();
     for(const t of tokens){
@@ -553,7 +417,6 @@
     const radius1 = 16;
     const radius2 = 28;
     const angles6 = [270, 330, 30, 90, 150, 210];
-
     if(index < ring1){
       const a = angles6[index % 6] * (Math.PI/180);
       return { dx: Math.cos(a) * radius1, dy: Math.sin(a) * radius1 };
@@ -563,9 +426,6 @@
     return { dx: Math.cos(a) * radius2, dy: Math.sin(a) * radius2 };
   }
 
-  /* -------------------------
-     DATA -> STATE
-  ------------------------- */
   function buildInitialState(){
     const { mapLayout, spawns, tokens } = baseData;
     const control = {};
@@ -580,7 +440,6 @@
       pendingBattles: [],
     };
   }
-
   function loadStateOrInit(){
     const key = storageKey(baseData.mapLayout.map_id);
     const raw = localStorage.getItem(key);
@@ -591,12 +450,10 @@
     }catch(e){}
     return buildInitialState();
   }
-
   function saveState(){
     localStorage.setItem(storageKey(baseData.mapLayout.map_id), JSON.stringify(state));
     log("Saved state.");
   }
-
   function resetState(){
     localStorage.removeItem(storageKey(baseData.mapLayout.map_id));
     state = buildInitialState();
@@ -609,15 +466,12 @@
     log("Reset to base data.");
   }
 
-  /* -------------------------
-     MAP GENERATION
-  ------------------------- */
   function buildFullHexSet(mapLayout){
     const r = Number(mapLayout.radius ?? 0);
     const expected = 1 + 3*r*(r+1);
     const listed = Array.isArray(mapLayout.hexes) ? mapLayout.hexes : [];
-
     const full = new Map();
+
     function set(h){
       full.set(hexKey(h.q,h.r), {
         q: h.q, r: h.r,
@@ -652,14 +506,8 @@
     return full;
   }
 
-  /* -------------------------
-     GAME RULES
-  ------------------------- */
   function tokenById(id){ return state.tokens.find(t=>t.token_id===id) || null; }
-
-  function tokenAtHex(q,r){
-    return state.tokens.find(t=>t.status==="active" && t.q===q && t.r===r) || null;
-  }
+  function tokenAtHex(q,r){ return state.tokens.find(t=>t.status==="active" && t.q===q && t.r===r) || null; }
 
   function canTraverseHex(q,r, moverFactionId){
     const owner = state.control[hexKey(q,r)] || null;
@@ -690,15 +538,12 @@
         parent.set(k, hexKey(cur.q, cur.r));
 
         const passable = canTraverseHex(nb.q, nb.r, token.faction_id);
-        if(passable){
-          q0.push({ q: nb.q, r: nb.r, d: nd });
-        }
+        if(passable) q0.push({ q: nb.q, r: nb.r, d: nd });
       }
     }
 
     dist.delete(startKey);
     parent.delete(startKey);
-
     lastReachParents = parent;
     return dist;
   }
@@ -721,10 +566,7 @@
     const destKey  = hexKey(destQ, destR);
 
     const path = reconstructPath(startKey, destKey, lastReachParents);
-    if(!path){
-      log(`ERROR: No path found to ${destKey}.`);
-      return;
-    }
+    if(!path){ log(`ERROR: No path found to ${destKey}.`); return; }
 
     const occupant = tokenAtHex(destQ, destR);
     const isEnemyOccupant = occupant && occupant.faction_id !== token.faction_id;
@@ -734,25 +576,16 @@
       state.control[k] = token.faction_id;
     }
 
-    token.q = destQ;
-    token.r = destR;
+    token.q = destQ; token.r = destR;
 
     if(isEnemyOccupant){
-      state.pendingBattles.unshift({
-        atHexKey: destKey,
-        tokenA: token.token_id,
-        tokenB: occupant.token_id,
-        createdAt: Date.now()
-      });
+      state.pendingBattles.unshift({ atHexKey: destKey, tokenA: token.token_id, tokenB: occupant.token_id, createdAt: Date.now() });
       log(`BATTLE TRIGGER at ${destKey}: ${token.token_id} vs ${occupant.token_id}`);
     }else{
       log(`Moved ${token.token_id} → ${destKey}`);
     }
   }
 
-  /* -------------------------
-     TOOLTIP
-  ------------------------- */
   function showHexTip(evt, h){
     const k = hexKey(h.q,h.r);
     const owner = state.control[k] || null;
@@ -800,15 +633,11 @@
   }
   function hideTip(){ ui.tip.style.display = "none"; }
 
-  /* -------------------------
-     RENDER
-  ------------------------- */
   function setHUD(){
     ui.versionPill.textContent = baseData.mapLayout.version || "v1";
     ui.mapName.textContent = baseData.mapLayout.name || baseData.mapLayout.map_id || "—";
     ui.mapRadius.textContent = String(baseData.mapLayout.radius ?? "—");
     ui.moveRec.textContent = baseData.mapLayout.movement_recommendation || "—";
-
     const instCount = [...hexes.values()].filter(h=>h.installation_id).length;
     ui.countsChip.textContent = `Hexes: ${hexes.size} | Installs: ${instCount}`;
   }
@@ -924,11 +753,7 @@
         txt.textContent = tokenGlyph(t);
         g.appendChild(txt);
 
-        g.addEventListener("click", (e)=>{
-          e.stopPropagation();
-          selectToken(t.token_id);
-        });
-
+        g.addEventListener("click", (e)=>{ e.stopPropagation(); selectToken(t.token_id); });
         g.addEventListener("mouseenter", (e)=>showTokenTip(e, t));
         g.addEventListener("mousemove", (e)=>moveTip(e));
         g.addEventListener("mouseleave", hideTip);
@@ -946,9 +771,6 @@
     renderTokens();
   }
 
-  /* -------------------------
-     INTERACTION
-  ------------------------- */
   function selectToken(id){
     selectedTokenId = id;
     moveBudget = null;
@@ -956,7 +778,6 @@
     selectedHexKey = null;
     lastReachParents = new Map();
     renderAll();
-
     const t = tokenById(id);
     if(t) log(`Selected ${t.token_id} (${t.faction_id})`);
   }
@@ -964,16 +785,11 @@
   function rollMovement(kind){
     const t = selectedTokenId ? tokenById(selectedTokenId) : null;
     if(!t){ log("Select a token first."); return; }
-
-    if(moveBudget != null){
-      log("You already rolled movement. Move or click End Move.");
-      return;
-    }
+    if(moveBudget != null){ log("You already rolled movement. Move or click End Move."); return; }
 
     moveBudget = (kind==="d6") ? randInt(1,6) : randInt(1,3);
     const reachableMap = computeReachable(t, moveBudget);
     reachableSet = new Set(reachableMap.keys());
-
     renderAll();
     log(`Rolled ${kind.toUpperCase()} = ${moveBudget} (reachable hexes highlighted)`);
   }
@@ -992,7 +808,6 @@
     selectedHexKey = k;
 
     const t = selectedTokenId ? tokenById(selectedTokenId) : null;
-
     if(t && moveBudget != null){
       if(!reachableSet.has(k)){
         log(`Not reachable: ${k}`);
@@ -1003,7 +818,6 @@
       endMove();
       return;
     }
-
     renderAll();
   }
 
@@ -1016,11 +830,9 @@
 
   function applyTransform(){
     ui.viewport.setAttribute("transform", `translate(${view.x} ${view.y}) scale(${view.scale})`);
-
-    // Keep 3D aligned (same transform)
     if(three.tileGroup){
       three.tileGroup.position.set(view.x, view.y, 0);
-      three.tileGroup.scale.set(view.scale, view.scale, 1);
+      three.tileGroup.scale.set(view.scale, view.scale, view.scale);
     }
   }
 
@@ -1048,7 +860,7 @@
   },{passive:false});
 
   /* =========================================================
-     THREE.JS TERRAIN MODELS (ALIGNMENT FIXED)
+     THREE TERRAIN (now visible & rotated)
      ========================================================= */
   const three = {
     renderer:null,
@@ -1060,40 +872,51 @@
     cache: new Map(),
   };
 
-  const VIEWBOX = { left:-900, right:900, top:650, bottom:-650, width:1800, height:1300 };
+  const VIEWBOX = { width:1800, height:1300 };
+  const BASE_FRUSTUM = { halfW: VIEWBOX.width/2, halfH: VIEWBOX.height/2 };
 
   function initThree(){
     const canvas = document.getElementById("threeCanvas");
     three.renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
     three.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    three.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     three.scene = new THREE.Scene();
 
-    // ✅ Camera is now top-down, axis-aligned with SVG X/Y
-    three.camera = new THREE.OrthographicCamera(VIEWBOX.left, VIEWBOX.right, VIEWBOX.top, VIEWBOX.bottom, -2000, 2000);
-    three.camera.position.set(0, 0, 1200);
-    three.camera.lookAt(0, 0, 0);
-    three.camera.up.set(0, 1, 0);
+    // ✅ Orthographic so alignment stays true
+    three.camera = new THREE.OrthographicCamera(-BASE_FRUSTUM.halfW, BASE_FRUSTUM.halfW, BASE_FRUSTUM.halfH, -BASE_FRUSTUM.halfH, -5000, 5000);
 
-    three.scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
-    dir.position.set(400, 300, 900); // ✅ Z-positive, still top-down-ish
-    three.scene.add(dir);
+    // ✅ Isometric-ish camera placement (depth visible, still aligned)
+    const { pitch, yaw, dist } = CAMERA_TILT;
+    const cam = new THREE.Vector3(0, 0, dist);
+    cam.applyAxisAngle(new THREE.Vector3(1,0,0), pitch);
+    cam.applyAxisAngle(new THREE.Vector3(0,0,1), yaw);
+    three.camera.position.copy(cam);
+    three.camera.lookAt(0,0,0);
+    three.camera.up.set(0,1,0);
+
+    // Lighting: stronger contrast so height reads
+    three.scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+    const key = new THREE.DirectionalLight(0xffffff, 0.95);
+    key.position.set(800, 600, 1400);
+    three.scene.add(key);
+
+    const rim = new THREE.DirectionalLight(0xffffff, 0.35);
+    rim.position.set(-700, -500, 900);
+    three.scene.add(rim);
 
     three.tileGroup = new THREE.Group();
     three.scene.add(three.tileGroup);
 
-    function resizeToMatchSVGMeet(){
+    function resizeMeet(){
       const w = canvas.clientWidth || canvas.parentElement.clientWidth;
       const h = canvas.clientHeight || canvas.parentElement.clientHeight;
       three.renderer.setSize(w, h, false);
 
-      // Mimic SVG preserveAspectRatio="meet" behavior
       const aspectCanvas = w / h;
       const aspectVB = VIEWBOX.width / VIEWBOX.height;
 
       if(aspectCanvas >= aspectVB){
-        // canvas is wider: expand left/right
         const scale = aspectCanvas / aspectVB;
         const halfW = (VIEWBOX.width * scale) / 2;
         const halfH = VIEWBOX.height / 2;
@@ -1102,7 +925,6 @@
         three.camera.top = halfH;
         three.camera.bottom = -halfH;
       }else{
-        // canvas is taller: expand top/bottom
         const scale = aspectVB / aspectCanvas;
         const halfW = VIEWBOX.width / 2;
         const halfH = (VIEWBOX.height * scale) / 2;
@@ -1111,18 +933,15 @@
         three.camera.top = halfH;
         three.camera.bottom = -halfH;
       }
-
       three.camera.updateProjectionMatrix();
     }
 
-    window.addEventListener("resize", resizeToMatchSVGMeet);
-    resizeToMatchSVGMeet();
+    window.addEventListener("resize", resizeMeet);
+    resizeMeet();
 
     (function loop(){
       requestAnimationFrame(loop);
-      if(three.renderer && three.scene && three.camera){
-        three.renderer.render(three.scene, three.camera);
-      }
+      three.renderer.render(three.scene, three.camera);
     })();
   }
 
@@ -1142,7 +961,8 @@
     const center = new THREE.Vector3(); box.getCenter(center);
     obj3d.position.sub(center);
 
-    const target = HEX_SIZE * 1.6;
+    // slightly larger so tiles "fill" a hex visually
+    const target = HEX_SIZE * 1.95;
     const s = target / maxDim;
     obj3d.scale.setScalar(s);
   }
@@ -1155,6 +975,8 @@
 
     obj.traverse(n=>{
       if(n.isMesh){
+        n.castShadow = false;
+        n.receiveShadow = false;
         if(!n.material){
           n.material = new THREE.MeshStandardMaterial({ roughness:0.95, metalness:0.0 });
         }
@@ -1170,7 +992,9 @@
     if(three.cache.has(key)) return three.cache.get(key).clone(true);
 
     const geo = await new Promise((resolve, reject)=> three.stlLoader.load(url, resolve, undefined, reject));
-    const mat = new THREE.MeshStandardMaterial({ roughness:0.95, metalness:0.0 });
+    geo.computeVertexNormals();
+
+    const mat = new THREE.MeshStandardMaterial({ roughness:0.92, metalness:0.02 });
     const mesh = new THREE.Mesh(geo, mat);
 
     const group = new THREE.Group();
@@ -1188,12 +1012,15 @@
     return await loadTerrainModel("normal");
   }
 
+  function applyTerrainRotation(obj, terrain){
+    const rot = TERRAIN_ROT[terrain] || TERRAIN_ROT._default;
+    obj.rotation.set(rot.x, rot.y, rot.z);
+  }
+
   async function buildTerrainTiles(){
-    if(!three.tileGroup) return;
     clearThreeTiles();
 
-    let ok = 0, fail = 0;
-
+    let ok=0, fail=0;
     for(const h of hexes.values()){
       const terrain = String(h.terrain || "normal");
       const {x,y} = axialToPixel(h.q, h.r);
@@ -1201,18 +1028,16 @@
       try{
         const model = await loadTerrainModel(terrain);
 
-        // ✅ DO NOT rotate the whole tile group into a different plane.
-        // If a specific asset is sideways, we can rotate that terrain only later.
-        // model.rotation.x = 0;
-
         centerAndScaleToHex(model);
+        applyTerrainRotation(model, terrain);
 
-        // align with SVG world coordinates directly
-        model.position.set(x, y, -20);
+        // z slightly behind svg, but still visible (camera is tilted now)
+        model.position.set(x, y, -60);
 
         three.tileGroup.add(model);
         ok++;
       }catch(e){
+        console.error(e);
         fail++;
       }
     }
