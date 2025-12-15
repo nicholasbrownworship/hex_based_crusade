@@ -134,7 +134,6 @@
       overflow:hidden;
     }
 
-    /* subtle “table glare” over the map area only */
     .mapWrap::before{
       content:"";
       position:absolute; inset:0;
@@ -208,7 +207,6 @@
     /* SVG */
     svg{ width:100%; height:100%; display:block; position:relative; z-index:1; }
 
-    /* “Physical tile” styling: base + bevel overlays via <defs> filters */
     .hex{
       stroke: rgba(255,255,255,.12);
       stroke-width: 1;
@@ -254,7 +252,6 @@
       stroke-width: 2px;
     }
 
-    /* Tokens look like physical chips */
     .token{
       cursor:pointer;
       filter: url(#tokenShadow);
@@ -368,7 +365,6 @@
 
     <svg id="svg" viewBox="-900 -650 1800 1300" aria-label="Hex map">
       <defs>
-        <!-- Soft shadow for tiles -->
         <filter id="tileShadow" x="-30%" y="-30%" width="160%" height="160%">
           <feDropShadow dx="0" dy="2.5" stdDeviation="2.2" flood-color="rgba(0,0,0,.55)"/>
         </filter>
@@ -385,7 +381,6 @@
           <feDropShadow dx="0" dy="0" stdDeviation="5.5" flood-color="rgba(255,255,255,.14)"/>
         </filter>
 
-        <!-- Acrylic control overlay glow -->
         <filter id="acrylicGlow" x="-60%" y="-60%" width="220%" height="220%">
           <feGaussianBlur stdDeviation="2.2" result="blur"/>
           <feMerge>
@@ -394,7 +389,6 @@
           </feMerge>
         </filter>
 
-        <!-- Token shadows -->
         <filter id="tokenShadow" x="-60%" y="-60%" width="220%" height="220%">
           <feDropShadow dx="0" dy="3.6" stdDeviation="3.0" flood-color="rgba(0,0,0,.58)"/>
           <feDropShadow dx="0" dy="0" stdDeviation="1.8" flood-color="rgba(255,255,255,.10)"/>
@@ -404,7 +398,6 @@
           <feDropShadow dx="0" dy="0" stdDeviation="5.2" flood-color="rgba(255,255,255,.14)"/>
         </filter>
 
-        <!-- Light direction “bevel” overlays using gradients -->
         <linearGradient id="bevelLight" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stop-color="rgba(255,255,255,.14)"/>
           <stop offset="0.35" stop-color="rgba(255,255,255,.06)"/>
@@ -418,16 +411,9 @@
       </defs>
 
       <g id="viewport">
-        <!-- 1) tile base layer -->
         <g id="hexLayer"></g>
-
-        <!-- 2) bevel overlay layer (non-interactive, purely visual) -->
         <g id="bevelLayer" style="pointer-events:none;"></g>
-
-        <!-- 3) control acrylic overlay -->
         <g id="controlLayer"></g>
-
-        <!-- 4) tokens -->
         <g id="tokenLayer"></g>
       </g>
     </svg>
@@ -554,7 +540,6 @@ function hexPolygonPoints(cx,cy){
    VISUALS
 ------------------------- */
 function terrainTint(terrain){
-  // Keep your existing terrain color language, but slightly deepen for “paint”
   switch(String(terrain||"normal")){
     case "urban": return "rgba(59,130,246,.08)";
     case "industrial": return "rgba(245,158,11,.08)";
@@ -877,9 +862,12 @@ function showTokenTip(evt, t){
 }
 
 function moveTip(evt){
-  const pad = 14;
-  ui.tip.style.left = (evt.clientX + pad) + "px";
-  ui.tip.style.top = (evt.clientY + pad) + "px";
+  // tighter to cursor
+  const pad = 6;      // was 14
+  const nudgeX = 2;
+  const nudgeY = 2;
+  ui.tip.style.left = (evt.clientX + pad + nudgeX) + "px";
+  ui.tip.style.top  = (evt.clientY + pad + nudgeY) + "px";
 }
 function hideTip(){ ui.tip.style.display = "none"; }
 
@@ -911,10 +899,8 @@ function renderHexes(){
 
   for(const h of hexes.values()){
     const {x,y} = axialToPixel(h.q, h.r);
-
     const k = hexKey(h.q,h.r);
 
-    // Base tile
     const poly = document.createElementNS("http://www.w3.org/2000/svg","polygon");
     poly.setAttribute("points", hexPolygonPoints(x,y));
     poly.classList.add("hex");
@@ -930,7 +916,6 @@ function renderHexes(){
 
     ui.hexLayer.appendChild(poly);
 
-    // Bevel overlay (two subtle passes: light + dark)
     const bevel1 = document.createElementNS("http://www.w3.org/2000/svg","polygon");
     bevel1.setAttribute("points", hexPolygonPoints(x,y));
     bevel1.style.fill = "none";
@@ -978,8 +963,6 @@ function renderControlZones(){
     const poly = document.createElementNS("http://www.w3.org/2000/svg","polygon");
     poly.setAttribute("points", hexPolygonPoints(x,y));
     poly.style.fill = controlRGBA(factionId);
-
-    // Acrylic-like overlay
     poly.style.opacity = "0.95";
     poly.style.filter = "url(#acrylicGlow)";
 
@@ -1018,13 +1001,11 @@ function renderTokens(){
       if(t.token_id === selectedTokenId) g.classList.add("selected");
       g.setAttribute("transform", `translate(${x},${y})`);
 
-      // outer chip
       const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
       c.setAttribute("r", 13);
       c.style.fill = (FACTIONS[t.faction_id]?.color) || "var(--neu)";
       g.appendChild(c);
 
-      // inner ring highlight for “physical”
       const ring = document.createElementNS("http://www.w3.org/2000/svg","circle");
       ring.setAttribute("r", 10.2);
       ring.style.fill = "none";
