@@ -288,7 +288,7 @@
         <span class="chip"><span class="dot" style="background:var(--neu)"></span>Neutral</span>
       </div>
       <div class="hint" style="margin-top:10px">
-        Installations are labeled in-hex. Hover a special hex to see its effect text.
+        Control zones show as a <b>tinted overlay</b> with a <b>bright border</b> around the edge of each faction’s territory.
       </div>
     </div>
 
@@ -319,6 +319,7 @@
     <svg id="svg" viewBox="-900 -650 1800 1300" aria-label="Hex map">
       <g id="viewport">
         <g id="hexLayer"></g>
+        <g id="controlLayer"></g>
         <g id="tokenLayer"></g>
       </g>
     </svg>
@@ -327,12 +328,7 @@
 
 <script>
 /**
- * GitHub Pages friendly: use RELATIVE paths (no leading "/")
- * Ensure you have:
- *   maps/bastior_prime_hex_v1/map_layout_v1.json
- *   maps/bastior_prime_hex_v1/spawns_v1.json
- *   maps/bastior_prime_hex_v1/tokens_v1.json
- *   data/installations_v1.json
+ * GitHub Pages friendly: RELATIVE paths (no leading "/")
  */
 const PATHS = {
   mapLayout:  "maps/bastior_prime_hex_v1/map_layout_v1.json",
@@ -374,13 +370,15 @@ const ui = {
   svg: document.getElementById("svg"),
   viewport: document.getElementById("viewport"),
   hexLayer: document.getElementById("hexLayer"),
+  controlLayer: document.getElementById("controlLayer"),
   tokenLayer: document.getElementById("tokenLayer"),
 };
 
-let baseData = null;     // immutable loaded JSON
-let state = null;        // mutable campaign state
+let baseData = null;
+let state = null;
+
 let selectedTokenId = null;
-let moveBudget = null;   // integer
+let moveBudget = null;
 let reachableSet = new Set();
 let selectedHexKey = null;
 
@@ -400,20 +398,10 @@ const DIRS = [
   {q: 1, r: 0}, {q: 1, r:-1}, {q: 0, r:-1},
   {q:-1, r: 0}, {q:-1, r: 1}, {q: 0, r: 1},
 ];
-function neighbors(q,r){
-  return DIRS.map(d=>({q:q+d.q, r:r+d.r}));
-}
-
-// distance in axial coords
-function hexDist(a,b){
-  const dq = a.q - b.q;
-  const dr = a.r - b.r;
-  const ds = (-a.q-a.r) - (-b.q-b.r);
-  return (Math.abs(dq)+Math.abs(dr)+Math.abs(ds))/2;
-}
+function neighbors(q,r){ return DIRS.map(d=>({q:q+d.q, r:r+d.r})); }
 
 // ---------- geometry (pointy-top) ----------
-const HEX_SIZE = 30; // px-ish in SVG units
+const HEX_SIZE = 30;
 
 function axialToPixel(q,r){
   const x = HEX_SIZE * Math.sqrt(3) * (q + r/2);
@@ -440,12 +428,28 @@ function terrainTint(terrain){
     default: return "rgba(255,255,255,.02)";
   }
 }
-function factionFill(factionId){
-  if(!factionId) return "rgba(255,255,255,.02)";
-  if(factionId==="defenders") return "rgba(59,130,246,.18)";
-  if(factionId==="attackers") return "rgba(249,115,22,.18)";
-  if(factionId==="raiders")   return "rgba(168,85,247,.18)";
-  return "rgba(255,255,255,.02)";
+
+// ---------- control zone visuals ----------
+function controlRGBA(factionId){
+  if(factionId==="defenders") return "rgba(59,130,246,0.22)";
+  if(factionId==="attackers") return "rgba(249,115,22,0.22)";
+  if(factionId==="raiders")   return "rgba(168,85,247,0.22)";
+  return "rgba(255,255,255,0)";
+}
+function controlStrokeRGBA(factionId){
+  if(factionId==="defenders") return "rgba(59,130,246,0.78)";
+  if(factionId==="attackers") return "rgba(249,115,22,0.78)";
+  if(factionId==="raiders")   return "rgba(168,85,247,0.78)";
+  return "rgba(255,255,255,0.2)";
+}
+function isControlBorderHex(q,r,factionId){
+  for(const nb of neighbors(q,r)){
+    const nk = hexKey(nb.q, nb.r);
+    if(!hexes.has(nk)) return true; // edge of map
+    const owner = state.control[nk] || null;
+    if(owner !== factionId) return true;
+  }
+  return false;
 }
 
 // ---------- load + state ----------
@@ -464,12 +468,11 @@ function buildInitialState(){
     control[hexKey(sp.q, sp.r)] = sp.faction_id;
   }
 
-  const tokenState = tokens.map(t=>({ ...t }));
   return {
     map_id: mapLayout.map_id,
     version: mapLayout.version || "v1",
     control,
-    tokens: tokenState,
+    tokens: tokens.map(t=>({ ...t })),
     pendingBattles: [],
   };
 }
@@ -509,7 +512,7 @@ function buildFullHexSet(mapLayout){
   const expected = 1 + 3*r*(r+1);
   const listed = Array.isArray(mapLayout.hexes) ? mapLayout.hexes : [];
 
-  const full = new Map(); // hexKey -> hex obj
+  const full = new Map();
   function set(h){
     full.set(hexKey(h.q,h.r), {
       q: h.q, r: h.r,
@@ -524,7 +527,6 @@ function buildFullHexSet(mapLayout){
     return full;
   }
 
-  // generate full radius
   for(let q=-r; q<=r; q++){
     for(let rr=-r; rr<=r; rr++){
       const s = -q-rr;
@@ -534,7 +536,6 @@ function buildFullHexSet(mapLayout){
     }
   }
 
-  // overlay listed specials
   for(const h of listed){
     full.set(hexKey(h.q,h.r), {
       q:h.q, r:h.r,
@@ -546,7 +547,7 @@ function buildFullHexSet(mapLayout){
   return full;
 }
 
-// ---------- interaction rules ----------
+// ---------- game interaction ----------
 function tokenById(id){ return state.tokens.find(t=>t.token_id===id) || null; }
 
 function tokenAtHex(q,r){
@@ -554,16 +555,14 @@ function tokenAtHex(q,r){
 }
 
 function canTraverseHex(q,r, moverFactionId){
-  const k = hexKey(q,r);
-  const owner = state.control[k] || null;
+  const owner = state.control[hexKey(q,r)] || null;
   if(!owner) return true;
-  if(owner === moverFactionId) return true;
-  return false;
+  return owner === moverFactionId;
 }
 
 function computeReachable(token, budget){
   const start = {q:token.q, r:token.r};
-  const visited = new Map(); // hexKey -> dist
+  const visited = new Map();
   const q0 = [{q:start.q, r:start.r, d:0}];
   visited.set(hexKey(start.q,start.r), 0);
 
@@ -578,11 +577,11 @@ function computeReachable(token, budget){
       const nd = cur.d + 1;
       if(visited.has(k) && visited.get(k) <= nd) continue;
 
-      const passable = canTraverseHex(nb.q, nb.r, token.faction_id);
       visited.set(k, nd);
 
-      // if enemy-controlled, allow landing but do not expand beyond it
+      const passable = canTraverseHex(nb.q, nb.r, token.faction_id);
       if(passable) q0.push({q:nb.q, r:nb.r, d:nd});
+      // enemy-controlled: allow landing but do not expand
     }
   }
 
@@ -615,7 +614,7 @@ function applyMove(token, destQ, destR){
   log(`Moved ${token.token_id} → ${destKey}`);
 }
 
-// ---------- token uniqueness + labeling ----------
+// ---------- token labeling ----------
 function tokenGlyph(t){
   const id = String(t.token_id || "").toLowerCase();
   if(id.startsWith("def_")) return "D" + (id.split("_")[1] || "");
@@ -626,7 +625,7 @@ function tokenGlyph(t){
 
 // ---------- stacking fan-out ----------
 function groupTokensByHex(tokens){
-  const m = new Map(); // hexKey -> [tokens]
+  const m = new Map();
   for(const t of tokens){
     if(t.status !== "active") continue;
     const k = hexKey(t.q, t.r);
@@ -660,6 +659,20 @@ function fanOffset(index, count){
 let hexes = null; // Map hexKey -> hex obj
 let installsById = new Map();
 
+function clearLayer(el){ while(el.firstChild) el.removeChild(el.firstChild); }
+
+function shortInstallLabel(id){
+  switch(id){
+    case "administratum_nexus": return "ADMIN";
+    case "fortress_complex": return "FORT";
+    case "manufactorum_node": return "MFG";
+    case "hive_ruins": return "HIVE";
+    case "void_port": return "PORT";
+    case "medicae_facility": return "MED";
+    default: return String(id).slice(0,6).toUpperCase();
+  }
+}
+
 function setHUD(){
   ui.versionPill.textContent = baseData.mapLayout.version || "v1";
   ui.mapName.textContent = baseData.mapLayout.name || baseData.mapLayout.map_id || "—";
@@ -679,34 +692,21 @@ function updateSidebarSelection(){
   ui.mode.textContent = (selectedTokenId && moveBudget!=null) ? "Move" : (selectedTokenId ? "Selected" : "Idle");
 }
 
-function clearLayer(el){ while(el.firstChild) el.removeChild(el.firstChild); }
-
-function shortInstallLabel(id){
-  switch(id){
-    case "administratum_nexus": return "ADMIN";
-    case "fortress_complex": return "FORT";
-    case "manufactorum_node": return "MFG";
-    case "hive_ruins": return "HIVE";
-    case "void_port": return "PORT";
-    case "medicae_facility": return "MED";
-    default: return String(id).slice(0,6).toUpperCase();
-  }
-}
-
 function renderHexes(){
   clearLayer(ui.hexLayer);
 
   for(const h of hexes.values()){
     const {x,y} = axialToPixel(h.q, h.r);
+
     const poly = document.createElementNS("http://www.w3.org/2000/svg","polygon");
     poly.setAttribute("points", hexPolygonPoints(x,y));
+    poly.classList.add("hex");
 
     const k = hexKey(h.q,h.r);
-    const owner = state.control[k] || null;
 
-    poly.style.fill = owner ? factionFill(owner) : terrainTint(h.terrain);
+    // Base fill is terrain only; control goes on the controlLayer as a true "zone" overlay.
+    poly.style.fill = terrainTint(h.terrain);
 
-    poly.classList.add("hex");
     if(reachableSet.has(k)) poly.classList.add("reachable");
     if(selectedHexKey===k) poly.classList.add("selected");
 
@@ -735,6 +735,34 @@ function renderHexes(){
   }
 }
 
+function renderControlZones(){
+  clearLayer(ui.controlLayer);
+
+  for(const [k, factionId] of Object.entries(state.control)){
+    if(!factionId) continue;
+    if(!hexes.has(k)) continue;
+
+    const {q,r} = parseHexKey(k);
+    const {x,y} = axialToPixel(q,r);
+
+    const poly = document.createElementNS("http://www.w3.org/2000/svg","polygon");
+    poly.setAttribute("points", hexPolygonPoints(x,y));
+    poly.style.fill = controlRGBA(factionId);
+
+    if(isControlBorderHex(q,r,factionId)){
+      poly.style.stroke = controlStrokeRGBA(factionId);
+      poly.style.strokeWidth = "2.6";
+      poly.style.filter = "drop-shadow(0 0 6px rgba(0,0,0,.35))";
+    }else{
+      poly.style.stroke = "rgba(255,255,255,0.06)";
+      poly.style.strokeWidth = "1";
+    }
+
+    poly.style.pointerEvents = "none";
+    ui.controlLayer.appendChild(poly);
+  }
+}
+
 function renderTokens(){
   clearLayer(ui.tokenLayer);
 
@@ -756,7 +784,6 @@ function renderTokens(){
       g.classList.add("token");
       if(t.token_id === selectedTokenId) g.classList.add("selected");
       g.setAttribute("transform", `translate(${x},${y})`);
-      g.setAttribute("data-id", t.token_id);
 
       const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
       c.setAttribute("r", 13);
@@ -787,6 +814,7 @@ function renderAll(){
   setHUD();
   updateSidebarSelection();
   renderHexes();
+  renderControlZones(); // <-- control zones overlay
   renderTokens();
 }
 
@@ -946,7 +974,6 @@ async function init(){
     installsById = new Map((installs||[]).map(x=>[x.id, x]));
 
     hexes = buildFullHexSet(mapLayout);
-
     state = loadStateOrInit();
 
     view = { x:0, y:0, scale:1 };
@@ -960,7 +987,7 @@ async function init(){
     console.error(err);
     ui.versionPill.textContent = "error";
     log(`ERROR: ${err.message}`);
-    log("Confirm file paths exist (and use relative paths on GitHub Pages).");
+    log("Confirm file paths exist (relative paths for GitHub Pages).");
   }
 }
 
