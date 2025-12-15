@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Hex Crusade Map</title>
 
-  <!-- ✅ Import map fixes: "three" + "three/addons/*" -->
+  <!-- ✅ Import map fixes bare module specifiers like "three" -->
   <script type="importmap">
   {
     "imports": {
@@ -24,11 +24,13 @@
       --line:rgba(255,255,255,.12);
       --shadow: 0 10px 30px rgba(0,0,0,.35);
 
-      --def:#3b82f6;
-      --atk:#f97316;
-      --rai:#a855f7;
-      --neu:#64748b;
+      /* faction colors */
+      --def:#3b82f6;   /* defenders */
+      --atk:#f97316;   /* attackers */
+      --rai:#a855f7;   /* raiders */
+      --neu:#64748b;   /* neutral/none */
 
+      /* terrain tints */
       --urban: rgba(59,130,246,.10);
       --industrial: rgba(245,158,11,.10);
       --wasteland: rgba(239,68,68,.10);
@@ -43,19 +45,35 @@
       height:100vh;
       overflow:hidden;
     }
-    .app{ display:grid; grid-template-columns: 360px 1fr; height:100vh; }
+    .app{
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      height:100vh;
+    }
     .sidebar{
       background: linear-gradient(180deg, var(--panel) 0%, rgba(15,22,33,.94) 100%);
       border-right: 1px solid var(--line);
       padding:14px;
       overflow:auto;
     }
-    .title{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
-    .title h1{ font-size:16px; margin:0; letter-spacing:.3px; }
+    .title{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .title h1{
+      font-size:16px;
+      margin:0;
+      letter-spacing:.3px;
+    }
     .pill{
-      font-size:12px; color:var(--muted);
+      font-size:12px;
+      color:var(--muted);
       border:1px solid var(--line);
-      padding:4px 8px; border-radius:999px;
+      padding:4px 8px;
+      border-radius:999px;
       background: rgba(255,255,255,.04);
     }
     .card{
@@ -80,13 +98,16 @@
       user-select:none;
     }
     .btn:hover{ background: rgba(255,255,255,.10); transform: translateY(-1px); }
+    .btn:active{ transform: translateY(0); }
     .btn.primary{ border-color: rgba(59,130,246,.45); background: rgba(59,130,246,.14); }
-    .btn.small{ padding:8px 10px; font-size:12px; border-radius:10px; }
     .btn.danger{ border-color: rgba(239,68,68,.45); background: rgba(239,68,68,.12); }
+    .btn.small{ padding:8px 10px; font-size:12px; border-radius:10px; }
     .kv{display:grid; grid-template-columns: 120px 1fr; gap:6px 10px; font-size:13px}
     .k{color:var(--muted)}
+    .v{color:var(--text)}
     .hint{ color:var(--muted); font-size:12px; line-height:1.4; margin-top:8px;}
     .divider{ height:1px; background:var(--line); margin:10px 0; }
+
     .log{
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
       font-size:12px;
@@ -100,24 +121,39 @@
       white-space: pre-wrap;
     }
 
-    .mapWrap{ position:relative; overflow:hidden; }
+    .mapWrap{
+      position:relative;
+      overflow:hidden;
+    }
 
-    /* 3D canvas behind SVG */
+    /* ✅ 3D canvas behind the SVG */
     #threeCanvas{
-      position:absolute; inset:0;
-      width:100%; height:100%;
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
       z-index:0;
       pointer-events:none;
     }
 
-    /* SVG above 3D */
-    svg{ position:relative; z-index:1; width:100%; height:100%; display:block; }
+    /* SVG stays on top */
+    svg{
+      position:relative;
+      z-index:1;
+      width:100%;
+      height:100%;
+      display:block;
+    }
 
     .topbar{
       position:absolute;
-      left:12px; top:12px; right:12px;
-      display:flex; gap:10px;
-      align-items:center; justify-content:space-between;
+      left:12px;
+      top:12px;
+      right:12px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
       pointer-events:none;
       z-index:10;
     }
@@ -127,7 +163,9 @@
       border:1px solid var(--line);
       border-radius:14px;
       padding:10px 12px;
-      display:flex; gap:10px; align-items:center;
+      display:flex;
+      gap:10px;
+      align-items:center;
       backdrop-filter: blur(8px);
     }
     .chip{
@@ -138,7 +176,16 @@
       padding:6px 10px;
       border-radius:999px;
     }
+    .legend{
+      display:flex; gap:8px; flex-wrap:wrap;
+    }
+    .dot{
+      width:10px;height:10px;border-radius:999px; display:inline-block; margin-right:6px;
+      border:1px solid rgba(255,255,255,.25);
+      vertical-align:middle;
+    }
 
+    /* Tooltip */
     .tip{
       position:absolute;
       pointer-events:none;
@@ -155,6 +202,7 @@
     .tip .s{ color:var(--muted); font-size:12px; margin-bottom:8px; }
     .tip .b{ font-size:12px; line-height:1.35; color:#dbe7ff; white-space:pre-wrap; }
 
+    /* SVG */
     .hex{
       stroke: rgba(255,255,255,.14);
       stroke-width: 1;
@@ -172,8 +220,30 @@
       stroke-width: 2.5;
       filter: drop-shadow(0 0 10px rgba(255,255,255,.18));
     }
-    .token{ cursor:pointer; filter: drop-shadow(0 8px 14px rgba(0,0,0,.45)); }
-    .token circle{ stroke: rgba(255,255,255,.75); stroke-width: 1.5; }
+    .hexText{
+      font-size: 10px;
+      fill: rgba(255,255,255,.82);
+      text-anchor: middle;
+      dominant-baseline: middle;
+      pointer-events:none;
+      user-select:none;
+    }
+    .hexMini{
+      font-size: 9px;
+      fill: rgba(255,255,255,.62);
+      text-anchor: middle;
+      dominant-baseline: middle;
+      pointer-events:none;
+      user-select:none;
+    }
+    .token{
+      cursor:pointer;
+      filter: drop-shadow(0 8px 14px rgba(0,0,0,.45));
+    }
+    .token circle{
+      stroke: rgba(255,255,255,.75);
+      stroke-width: 1.5;
+    }
     .token text{
       font-size: 11px;
       font-weight: 900;
@@ -182,6 +252,10 @@
       dominant-baseline: middle;
       pointer-events:none;
       user-select:none;
+    }
+    .token.selected circle{
+      stroke-width: 3;
+      filter: drop-shadow(0 0 12px rgba(255,255,255,.18));
     }
   </style>
 </head>
@@ -235,6 +309,19 @@
     </div>
 
     <div class="card">
+      <div style="font-weight:800;font-size:13px;margin-bottom:8px;">Legend</div>
+      <div class="legend">
+        <span class="chip"><span class="dot" style="background:var(--def)"></span>Defenders</span>
+        <span class="chip"><span class="dot" style="background:var(--atk)"></span>Attackers</span>
+        <span class="chip"><span class="dot" style="background:var(--rai)"></span>Raiders</span>
+        <span class="chip"><span class="dot" style="background:var(--neu)"></span>Neutral</span>
+      </div>
+      <div class="hint" style="margin-top:10px">
+        Control zones show as a <b>tinted overlay</b> with a <b>bright border</b> around the edge of each faction’s territory.
+      </div>
+    </div>
+
+    <div class="card">
       <div style="font-weight:800;font-size:13px;margin-bottom:8px;">Log</div>
       <div class="log" id="log"></div>
     </div>
@@ -258,6 +345,7 @@
       <div class="b" id="tipBody"></div>
     </div>
 
+    <!-- ✅ 3D terrain layer -->
     <canvas id="threeCanvas"></canvas>
 
     <svg id="svg" viewBox="-900 -650 1800 1300" aria-label="Hex map">
@@ -294,13 +382,13 @@
   const STORAGE_PREFIX = "hexCrusadeState::";
   const HEX_SIZE = 30;
 
-  // ✅ Your assets
+  // ✅ Your current assets in GLB/
   const TERRAIN_ASSETS = {
     normal:     { type:"obj", url:"GLB/normal.obj" },
     fortified:  { type:"stl", url:"GLB/fortified.stl" },
     industrial: { type:"stl", url:"GLB/industrial.stl" },
 
-    // not uploaded yet → fallback to normal
+    // not provided yet -> fallback to normal
     urban:      { type:"fallback" },
     wasteland:  { type:"fallback" },
   };
@@ -342,14 +430,17 @@
   ------------------------- */
   let baseData = null;
   let state = null;
-  let hexes = null;
-  let installsById = new Map();
+
+  let hexes = null;                 // Map hexKey -> hex obj
+  let installsById = new Map();     // id -> install json
 
   let selectedTokenId = null;
   let moveBudget = null;
   let reachableSet = new Set();
   let selectedHexKey = null;
-  let lastReachParents = new Map();
+
+  // For path control:
+  let lastReachParents = new Map(); // hexKey -> parentKey
 
   /* -------------------------
      UTILS
@@ -360,15 +451,17 @@
   }
   function clamp(n,a,b){ return Math.max(a, Math.min(b,n)); }
   function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
   function hexKey(q,r){ return `${q},${r}`; }
   function parseHexKey(k){ const [q,r]=k.split(",").map(Number); return {q,r}; }
-  function clearLayer(el){ while(el.firstChild) el.removeChild(el.firstChild); }
 
   const DIRS = [
     {q: 1, r: 0}, {q: 1, r:-1}, {q: 0, r:-1},
     {q:-1, r: 0}, {q:-1, r: 1}, {q: 0, r: 1},
   ];
   function neighbors(q,r){ return DIRS.map(d=>({q:q+d.q, r:r+d.r})); }
+
+  function clearLayer(el){ while(el.firstChild) el.removeChild(el.firstChild); }
 
   async function loadJSON(path){
     const res = await fetch(path, {cache:"no-cache"});
@@ -397,138 +490,105 @@
   }
 
   /* -------------------------
-     THREE SETUP
+     VISUALS
   ------------------------- */
-  const three = {
-    renderer:null, scene:null, camera:null, tileGroup:null,
-    objLoader: new OBJLoader(),
-    stlLoader: new STLLoader(),
-    cache: new Map(),
-  };
-
-  function initThree(){
-    const canvas = document.getElementById("threeCanvas");
-    three.renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
-    three.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-
-    three.scene = new THREE.Scene();
-    three.camera = new THREE.OrthographicCamera(-900, 900, 650, -650, 0.1, 5000);
-    three.camera.position.set(0, -900, 900);
-    three.camera.lookAt(0,0,0);
-
-    three.scene.add(new THREE.AmbientLight(0xffffff, 0.95));
-    const dir = new THREE.DirectionalLight(0xffffff, 0.9);
-    dir.position.set(600, -800, 1200);
-    three.scene.add(dir);
-
-    three.tileGroup = new THREE.Group();
-    three.scene.add(three.tileGroup);
-
-    const resize = ()=>{
-      const w = canvas.clientWidth || canvas.parentElement.clientWidth;
-      const h = canvas.clientHeight || canvas.parentElement.clientHeight;
-      three.renderer.setSize(w, h, false);
-      three.camera.updateProjectionMatrix();
-    };
-    window.addEventListener("resize", resize);
-    resize();
-
-    (function loop(){
-      requestAnimationFrame(loop);
-      three.renderer.render(three.scene, three.camera);
-    })();
-  }
-
-  function centerAndScaleToHex(obj3d){
-    const box = new THREE.Box3().setFromObject(obj3d);
-    const size = new THREE.Vector3(); box.getSize(size);
-    const maxDim = Math.max(size.x, size.y, size.z);
-    if(!isFinite(maxDim) || maxDim <= 1e-6) return;
-
-    const center = new THREE.Vector3(); box.getCenter(center);
-    obj3d.position.sub(center);
-
-    const target = HEX_SIZE * 1.6;
-    const s = target / maxDim;
-    obj3d.scale.setScalar(s);
-  }
-
-  async function loadOBJ(url){
-    const key = `obj::${url}`;
-    if(three.cache.has(key)) return three.cache.get(key).clone(true);
-    const obj = await new Promise((resolve,reject)=> three.objLoader.load(url, resolve, undefined, reject));
-    obj.traverse(n=>{
-      if(n.isMesh && !n.material){
-        n.material = new THREE.MeshStandardMaterial({ roughness:0.95, metalness:0.0 });
-      }
-    });
-    three.cache.set(key, obj);
-    return obj.clone(true);
-  }
-
-  async function loadSTL(url){
-    const key = `stl::${url}`;
-    if(three.cache.has(key)) return three.cache.get(key).clone(true);
-    const geo = await new Promise((resolve,reject)=> three.stlLoader.load(url, resolve, undefined, reject));
-    const mat = new THREE.MeshStandardMaterial({ roughness:0.95, metalness:0.0 });
-    const mesh = new THREE.Mesh(geo, mat);
-    const group = new THREE.Group(); group.add(mesh);
-    three.cache.set(key, group);
-    return group.clone(true);
-  }
-
-  async function loadTerrainModel(terrain){
-    const entry = TERRAIN_ASSETS[terrain] || TERRAIN_ASSETS.normal;
-    if(entry.type === "fallback") return loadTerrainModel("normal");
-    if(entry.type === "obj") return await loadOBJ(entry.url);
-    if(entry.type === "stl") return await loadSTL(entry.url);
-    return await loadTerrainModel("normal");
-  }
-
-  function clearThreeTiles(){
-    while(three.tileGroup.children.length) three.tileGroup.remove(three.tileGroup.children[0]);
-  }
-
-  async function buildTerrainTiles(){
-    clearThreeTiles();
-    let ok = 0, fail = 0;
-
-    for(const h of hexes.values()){
-      const terrain = String(h.terrain || "normal");
-      const {x,y} = axialToPixel(h.q, h.r);
-
-      try{
-        const model = await loadTerrainModel(terrain);
-
-        // rotate to "top-down"
-        model.rotation.x = Math.PI / 2;
-
-        centerAndScaleToHex(model);
-
-        model.position.x += x;
-        model.position.y += y;
-        model.position.z = -5;
-
-        three.tileGroup.add(model);
-        ok++;
-      }catch(e){
-        fail++;
-      }
+  function terrainTint(terrain){
+    switch(String(terrain||"normal")){
+      case "urban": return "var(--urban)";
+      case "industrial": return "var(--industrial)";
+      case "wasteland": return "var(--wasteland)";
+      case "fortified": return "var(--fortified)";
+      default: return "rgba(255,255,255,.02)";
     }
+  }
 
-    log(`3D tiles: ${ok} loaded, ${fail} failed.`);
-    if(fail) log(`If fail>0: check Console for 404s (GLB/ case matters on GitHub Pages).`);
+  function controlRGBA(factionId){
+    if(factionId==="defenders") return "rgba(59,130,246,0.22)";
+    if(factionId==="attackers") return "rgba(249,115,22,0.22)";
+    if(factionId==="raiders")   return "rgba(168,85,247,0.22)";
+    return "rgba(255,255,255,0)";
+  }
+  function controlStrokeRGBA(factionId){
+    if(factionId==="defenders") return "rgba(59,130,246,0.78)";
+    if(factionId==="attackers") return "rgba(249,115,22,0.78)";
+    if(factionId==="raiders")   return "rgba(168,85,247,0.78)";
+    return "rgba(255,255,255,0.2)";
+  }
+  function isControlBorderHex(q,r,factionId){
+    for(const nb of neighbors(q,r)){
+      const nk = hexKey(nb.q, nb.r);
+      if(!hexes.has(nk)) return true;
+      const owner = state.control[nk] || null;
+      if(owner !== factionId) return true;
+    }
+    return false;
+  }
+
+  function shortInstallLabel(id){
+    switch(id){
+      case "administratum_nexus": return "ADMIN";
+      case "fortress_complex": return "FORT";
+      case "manufactorum_node": return "MFG";
+      case "hive_ruins": return "HIVE";
+      case "void_port": return "PORT";
+      case "medicae_facility": return "MED";
+      default: return String(id).slice(0,6).toUpperCase();
+    }
+  }
+
+  function tokenGlyph(t){
+    const id = String(t.token_id || "").toLowerCase();
+    if(id.startsWith("def_")) return "D" + (id.split("_")[1] || "");
+    if(id.startsWith("atk_")) return "A" + (id.split("_")[1] || "");
+    if(id.startsWith("rai_")) return "R" + (id.split("_")[1] || "");
+    return (t.token_id || "?").slice(0,2).toUpperCase();
   }
 
   /* -------------------------
-     MAP / STATE
+     STACKING FAN OUT
+  ------------------------- */
+  function groupTokensByHex(tokens){
+    const m = new Map();
+    for(const t of tokens){
+      if(t.status !== "active") continue;
+      const k = hexKey(t.q, t.r);
+      if(!m.has(k)) m.set(k, []);
+      m.get(k).push(t);
+    }
+    return m;
+  }
+  function fanOffset(index, count){
+    if(count <= 1) return {dx:0, dy:0};
+
+    const ring1 = Math.min(count, 6);
+    const ring2 = Math.max(0, count - 6);
+
+    const radius1 = 16;
+    const radius2 = 28;
+
+    const angles6 = [270, 330, 30, 90, 150, 210];
+
+    if(index < ring1){
+      const a = angles6[index % 6] * (Math.PI/180);
+      return { dx: Math.cos(a) * radius1, dy: Math.sin(a) * radius1 };
+    }
+
+    const idx2 = index - 6;
+    const a = (idx2 * (360 / Math.max(1, ring2))) * (Math.PI/180);
+    return { dx: Math.cos(a) * radius2, dy: Math.sin(a) * radius2 };
+  }
+
+  /* -------------------------
+     DATA -> STATE
   ------------------------- */
   function buildInitialState(){
     const { mapLayout, spawns, tokens } = baseData;
+
     const control = {};
     for(const sp of spawns){
       control[hexKey(sp.q, sp.r)] = sp.faction_id;
     }
+
     return {
       map_id: mapLayout.map_id,
       version: mapLayout.version || "v1",
@@ -553,6 +613,7 @@
     localStorage.setItem(storageKey(baseData.mapLayout.map_id), JSON.stringify(state));
     log("Saved state.");
   }
+
   function resetState(){
     localStorage.removeItem(storageKey(baseData.mapLayout.map_id));
     state = buildInitialState();
@@ -565,6 +626,9 @@
     log("Reset to base data.");
   }
 
+  /* -------------------------
+     MAP GENERATION
+  ------------------------- */
   function buildFullHexSet(mapLayout){
     const r = Number(mapLayout.radius ?? 0);
     const expected = 1 + 3*r*(r+1);
@@ -594,6 +658,7 @@
       }
     }
 
+    // overlay listed specials
     for(const h of listed){
       full.set(hexKey(h.q,h.r), {
         q:h.q, r:h.r,
@@ -606,45 +671,565 @@
   }
 
   /* -------------------------
-     SVG RENDER (kept simple)
+     GAME RULES
   ------------------------- */
-  function terrainTint(terrain){
-    switch(String(terrain||"normal")){
-      case "urban": return "var(--urban)";
-      case "industrial": return "var(--industrial)";
-      case "wasteland": return "var(--wasteland)";
-      case "fortified": return "var(--fortified)";
-      default: return "rgba(255,255,255,.02)";
+  function tokenById(id){ return state.tokens.find(t=>t.token_id===id) || null; }
+
+  function tokenAtHex(q,r){
+    return state.tokens.find(t=>t.status==="active" && t.q===q && t.r===r) || null;
+  }
+
+  function canTraverseHex(q,r, moverFactionId){
+    const owner = state.control[hexKey(q,r)] || null;
+    if(!owner) return true;
+    return owner === moverFactionId;
+  }
+
+  function computeReachable(token, budget){
+    const startKey = hexKey(token.q, token.r);
+
+    const dist = new Map();
+    const parent = new Map();
+
+    const q0 = [{ q: token.q, r: token.r, d: 0 }];
+    dist.set(startKey, 0);
+
+    while(q0.length){
+      const cur = q0.shift();
+      if(cur.d === budget) continue;
+
+      for(const nb of neighbors(cur.q, cur.r)){
+        const k = hexKey(nb.q, nb.r);
+        if(!hexes.has(k)) continue;
+
+        const nd = cur.d + 1;
+        if(dist.has(k) && dist.get(k) <= nd) continue;
+
+        dist.set(k, nd);
+        parent.set(k, hexKey(cur.q, cur.r));
+
+        const passable = canTraverseHex(nb.q, nb.r, token.faction_id);
+        if(passable){
+          q0.push({ q: nb.q, r: nb.r, d: nd });
+        }
+      }
+    }
+
+    dist.delete(startKey);
+    parent.delete(startKey);
+
+    lastReachParents = parent;
+    return dist;
+  }
+
+  function reconstructPath(startKey, endKey, parentMap){
+    const path = [];
+    let cur = endKey;
+
+    while(cur && cur !== startKey){
+      path.push(cur);
+      cur = parentMap.get(cur);
+    }
+    if(cur !== startKey) return null;
+
+    path.push(startKey);
+    path.reverse();
+    return path;
+  }
+
+  function applyMove(token, destQ, destR){
+    const startKey = hexKey(token.q, token.r);
+    const destKey  = hexKey(destQ, destR);
+
+    const path = reconstructPath(startKey, destKey, lastReachParents);
+    if(!path){
+      log(`ERROR: No path found to ${destKey}.`);
+      return;
+    }
+
+    const occupant = tokenAtHex(destQ, destR);
+    const isEnemyOccupant = occupant && occupant.faction_id !== token.faction_id;
+
+    for(const k of path){
+      if(k === destKey && isEnemyOccupant) continue;
+      state.control[k] = token.faction_id;
+    }
+
+    token.q = destQ;
+    token.r = destR;
+
+    if(isEnemyOccupant){
+      state.pendingBattles.unshift({
+        atHexKey: destKey,
+        tokenA: token.token_id,
+        tokenB: occupant.token_id,
+        createdAt: Date.now()
+      });
+      log(`BATTLE TRIGGER at ${destKey}: ${token.token_id} (${token.faction_id}) vs ${occupant.token_id} (${occupant.faction_id})`);
+      log(`Control updated along path (${path.length-1} traveled hexes); destination awaits battle result.`);
+    }else{
+      log(`Moved ${token.token_id} → ${destKey} (control updated along path: ${path.length} hexes)`);
     }
   }
 
-  function renderHexes(){
-    clearLayer(ui.hexLayer);
-    for(const h of hexes.values()){
-      const {x,y} = axialToPixel(h.q, h.r);
-      const poly = document.createElementNS("http://www.w3.org/2000/svg","polygon");
-      poly.setAttribute("points", hexPolygonPoints(x,y));
-      poly.classList.add("hex");
-      poly.style.fill = terrainTint(h.terrain);
-      ui.hexLayer.appendChild(poly);
+  /* -------------------------
+     TOOLTIP
+  ------------------------- */
+  function showHexTip(evt, h){
+    const k = hexKey(h.q,h.r);
+    const owner = state.control[k] || null;
+    const ownerName = owner ? (FACTIONS[owner]?.name || owner) : "Neutral";
+    const terrain = h.terrain || "normal";
+
+    let title = `Hex ${h.q},${h.r}`;
+    let sub = `${ownerName} • terrain: ${terrain}`;
+    let body = "";
+
+    if(h.installation_id){
+      const inst = installsById.get(h.installation_id);
+      if(inst){
+        title = inst.name || `Installation: ${h.installation_id}`;
+        sub = `${ownerName} • ${h.installation_id}`;
+        body = inst.effect_text || inst.effect || "";
+      }else{
+        title = `Installation: ${h.installation_id}`;
+        body = "No installation data found for this id.";
+      }
+      if(h.notes) body = (body ? body + "\n\n" : "") + `Notes: ${h.notes}`;
+    }else{
+      body = h.notes || "";
     }
+
+    ui.tipTitle.textContent = title;
+    ui.tipSub.textContent = sub;
+    ui.tipBody.textContent = body || "—";
+    ui.tip.style.display = "block";
+    moveTip(evt);
   }
 
-  function renderAll(){
+  function showTokenTip(evt, t){
+    ui.tipTitle.textContent = `Token: ${t.token_id}`;
+    ui.tipSub.textContent = `${FACTIONS[t.faction_id]?.name || t.faction_id} • ${t.status}`;
+    ui.tipBody.textContent = `Player: ${t.player_name || "—"}\nLocation: ${t.q},${t.r}`;
+    ui.tip.style.display = "block";
+    moveTip(evt);
+  }
+
+  function moveTip(evt){
+    const pad = 14;
+    ui.tip.style.left = (evt.clientX + pad) + "px";
+    ui.tip.style.top = (evt.clientY + pad) + "px";
+  }
+  function hideTip(){ ui.tip.style.display = "none"; }
+
+  /* -------------------------
+     RENDER
+  ------------------------- */
+  function setHUD(){
     ui.versionPill.textContent = baseData.mapLayout.version || "v1";
     ui.mapName.textContent = baseData.mapLayout.name || baseData.mapLayout.map_id || "—";
     ui.mapRadius.textContent = String(baseData.mapLayout.radius ?? "—");
     ui.moveRec.textContent = baseData.mapLayout.movement_recommendation || "—";
-    ui.countsChip.textContent = `Hexes: ${hexes.size}`;
+
+    const instCount = [...hexes.values()].filter(h=>h.installation_id).length;
+    ui.countsChip.textContent = `Hexes: ${hexes.size} | Installs: ${instCount}`;
+  }
+
+  function updateSidebarSelection(){
+    const t = selectedTokenId ? tokenById(selectedTokenId) : null;
+    ui.selToken.textContent = t
+      ? `${t.token_id} — ${t.player_name || "Player"} (${t.faction_id}) @ ${t.q},${t.r}`
+      : "None";
+    ui.movePts.textContent = moveBudget == null ? "—" : String(moveBudget);
+    ui.mode.textContent = (selectedTokenId && moveBudget!=null) ? "Move" : (selectedTokenId ? "Selected" : "Idle");
+  }
+
+  function renderHexes(){
+    clearLayer(ui.hexLayer);
+
+    for(const h of hexes.values()){
+      const {x,y} = axialToPixel(h.q, h.r);
+
+      const poly = document.createElementNS("http://www.w3.org/2000/svg","polygon");
+      poly.setAttribute("points", hexPolygonPoints(x,y));
+      poly.classList.add("hex");
+
+      const k = hexKey(h.q,h.r);
+      poly.style.fill = terrainTint(h.terrain);
+
+      if(reachableSet.has(k)) poly.classList.add("reachable");
+      if(selectedHexKey===k) poly.classList.add("selected");
+
+      poly.addEventListener("mouseenter", (e)=>showHexTip(e, h));
+      poly.addEventListener("mousemove", (e)=>moveTip(e));
+      poly.addEventListener("mouseleave", hideTip);
+      poly.addEventListener("click", ()=>onHexClick(h));
+
+      ui.hexLayer.appendChild(poly);
+
+      if(h.installation_id){
+        const txt = document.createElementNS("http://www.w3.org/2000/svg","text");
+        txt.setAttribute("x", x);
+        txt.setAttribute("y", y-6);
+        txt.classList.add("hexText");
+        txt.textContent = shortInstallLabel(h.installation_id);
+        ui.hexLayer.appendChild(txt);
+
+        const mini = document.createElementNS("http://www.w3.org/2000/svg","text");
+        mini.setAttribute("x", x);
+        mini.setAttribute("y", y+10);
+        mini.classList.add("hexMini");
+        mini.textContent = `${h.q},${h.r}`;
+        ui.hexLayer.appendChild(mini);
+      }
+    }
+  }
+
+  function renderControlZones(){
+    clearLayer(ui.controlLayer);
+
+    for(const [k, factionId] of Object.entries(state.control)){
+      if(!factionId) continue;
+      if(!hexes.has(k)) continue;
+
+      const {q,r} = parseHexKey(k);
+      const {x,y} = axialToPixel(q,r);
+
+      const poly = document.createElementNS("http://www.w3.org/2000/svg","polygon");
+      poly.setAttribute("points", hexPolygonPoints(x,y));
+      poly.style.fill = controlRGBA(factionId);
+
+      if(isControlBorderHex(q,r,factionId)){
+        poly.style.stroke = controlStrokeRGBA(factionId);
+        poly.style.strokeWidth = "2.6";
+        poly.style.filter = "drop-shadow(0 0 6px rgba(0,0,0,.35))";
+      }else{
+        poly.style.stroke = "rgba(255,255,255,0.06)";
+        poly.style.strokeWidth = "1";
+      }
+
+      poly.style.pointerEvents = "none";
+      ui.controlLayer.appendChild(poly);
+    }
+  }
+
+  function renderTokens(){
+    clearLayer(ui.tokenLayer);
+
+    const activeTokens = state.tokens.filter(t => t.status === "active");
+    const groups = groupTokensByHex(activeTokens);
+
+    for(const [k, group] of groups.entries()){
+      group.sort((a,b)=> String(a.token_id).localeCompare(String(b.token_id)));
+
+      const {q, r} = parseHexKey(k);
+      const base = axialToPixel(q, r);
+
+      group.forEach((t, i) => {
+        const off = fanOffset(i, group.length);
+        const x = base.x + off.dx;
+        const y = base.y + off.dy;
+
+        const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+        g.classList.add("token");
+        if(t.token_id === selectedTokenId) g.classList.add("selected");
+        g.setAttribute("transform", `translate(${x},${y})`);
+
+        const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
+        c.setAttribute("r", 13);
+        c.style.fill = (FACTIONS[t.faction_id]?.color) || "var(--neu)";
+        g.appendChild(c);
+
+        const txt = document.createElementNS("http://www.w3.org/2000/svg","text");
+        txt.setAttribute("x", 0);
+        txt.setAttribute("y", 1);
+        txt.textContent = tokenGlyph(t);
+        g.appendChild(txt);
+
+        g.addEventListener("click", (e)=>{
+          e.stopPropagation();
+          selectToken(t.token_id);
+        });
+
+        g.addEventListener("mouseenter", (e)=>showTokenTip(e, t));
+        g.addEventListener("mousemove", (e)=>moveTip(e));
+        g.addEventListener("mouseleave", hideTip);
+
+        ui.tokenLayer.appendChild(g);
+      });
+    }
+  }
+
+  function renderAll(){
+    setHUD();
+    updateSidebarSelection();
     renderHexes();
+    renderControlZones();
+    renderTokens();
+  }
+
+  /* -------------------------
+     INTERACTION
+  ------------------------- */
+  function selectToken(id){
+    selectedTokenId = id;
+    moveBudget = null;
+    reachableSet = new Set();
+    selectedHexKey = null;
+    lastReachParents = new Map();
+    renderAll();
+
+    const t = tokenById(id);
+    if(t) log(`Selected ${t.token_id} (${t.faction_id})`);
+  }
+
+  function rollMovement(kind){
+    const t = selectedTokenId ? tokenById(selectedTokenId) : null;
+    if(!t){ log("Select a token first."); return; }
+
+    if(moveBudget != null){
+      log("You already rolled movement. Move or click End Move.");
+      return;
+    }
+
+    moveBudget = (kind==="d6") ? randInt(1,6) : randInt(1,3);
+    const reachableMap = computeReachable(t, moveBudget);
+    reachableSet = new Set(reachableMap.keys());
+
+    renderAll();
+    log(`Rolled ${kind.toUpperCase()} = ${moveBudget} (reachable hexes highlighted)`);
+  }
+
+  function endMove(){
+    moveBudget = null;
+    reachableSet = new Set();
+    selectedHexKey = null;
+    lastReachParents = new Map();
+    renderAll();
+    log("Ended move mode.");
+  }
+
+  function onHexClick(h){
+    const k = hexKey(h.q,h.r);
+    selectedHexKey = k;
+
+    const t = selectedTokenId ? tokenById(selectedTokenId) : null;
+
+    if(t && moveBudget != null){
+      if(!reachableSet.has(k)){
+        log(`Not reachable: ${k}`);
+        renderAll();
+        return;
+      }
+      applyMove(t, h.q, h.r);
+      endMove();
+      return;
+    }
+
+    renderAll();
+  }
+
+  /* -------------------------
+     PAN / ZOOM
+  ------------------------- */
+  let isPanning = false;
+  let panStart = null;
+  let view = { x:0, y:0, scale:1 };
+
+  function applyTransform(){
+    ui.viewport.setAttribute("transform", `translate(${view.x} ${view.y}) scale(${view.scale})`);
+
+    // ✅ Keep 3D tiles aligned with SVG pan/zoom
+    if(three.tileGroup){
+      three.tileGroup.position.set(view.x, view.y, 0);
+      three.tileGroup.scale.set(view.scale, view.scale, 1);
+    }
+  }
+
+  ui.svg.addEventListener("mousedown", (e)=>{
+    if(e.button !== 0) return;
+    isPanning = true;
+    panStart = { x:e.clientX, y:e.clientY, vx:view.x, vy:view.y };
+  });
+  window.addEventListener("mousemove", (e)=>{
+    if(!isPanning) return;
+    const dx = e.clientX - panStart.x;
+    const dy = e.clientY - panStart.y;
+    view.x = panStart.vx + dx;
+    view.y = panStart.vy + dy;
+    applyTransform();
+  });
+  window.addEventListener("mouseup", ()=>{ isPanning=false; });
+
+  ui.svg.addEventListener("wheel", (e)=>{
+    e.preventDefault();
+    const delta = -Math.sign(e.deltaY);
+    const factor = delta > 0 ? 1.12 : 0.90;
+    view.scale = clamp(view.scale * factor, 0.35, 2.7);
+    applyTransform();
+  },{passive:false});
+
+  /* =========================================================
+     ✅ THREE.JS TERRAIN MODELS (OBJ/STL) — ADDED
+     ========================================================= */
+  const three = {
+    renderer:null,
+    scene:null,
+    camera:null,
+    tileGroup:null,
+    objLoader: new OBJLoader(),
+    stlLoader: new STLLoader(),
+    cache: new Map(),
+  };
+
+  function initThree(){
+    const canvas = document.getElementById("threeCanvas");
+    three.renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+    three.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+
+    // Scene + ortho camera matches your SVG viewBox world
+    three.scene = new THREE.Scene();
+    three.camera = new THREE.OrthographicCamera(-900, 900, 650, -650, 0.1, 5000);
+    three.camera.position.set(0, -900, 900);
+    three.camera.lookAt(0,0,0);
+
+    three.scene.add(new THREE.AmbientLight(0xffffff, 0.95));
+    const dir = new THREE.DirectionalLight(0xffffff, 0.9);
+    dir.position.set(600, -800, 1200);
+    three.scene.add(dir);
+
+    three.tileGroup = new THREE.Group();
+    three.scene.add(three.tileGroup);
+
+    const resize = ()=>{
+      const w = canvas.clientWidth || canvas.parentElement.clientWidth;
+      const h = canvas.clientHeight || canvas.parentElement.clientHeight;
+      three.renderer.setSize(w, h, false);
+      three.camera.updateProjectionMatrix();
+    };
+    window.addEventListener("resize", resize);
+    resize();
+
+    (function loop(){
+      requestAnimationFrame(loop);
+      if(three.renderer && three.scene && three.camera){
+        three.renderer.render(three.scene, three.camera);
+      }
+    })();
+  }
+
+  function clearThreeTiles(){
+    if(!three.tileGroup) return;
+    while(three.tileGroup.children.length){
+      three.tileGroup.remove(three.tileGroup.children[0]);
+    }
+  }
+
+  function centerAndScaleToHex(obj3d){
+    const box = new THREE.Box3().setFromObject(obj3d);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    if(!isFinite(maxDim) || maxDim <= 1e-6) return;
+
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    obj3d.position.sub(center);
+
+    const target = HEX_SIZE * 1.6; // tweak later if you want
+    const s = target / maxDim;
+    obj3d.scale.setScalar(s);
+  }
+
+  async function loadOBJ(url){
+    const key = `obj::${url}`;
+    if(three.cache.has(key)) return three.cache.get(key).clone(true);
+
+    const obj = await new Promise((resolve, reject)=>{
+      three.objLoader.load(url, resolve, undefined, reject);
+    });
+
+    obj.traverse((n)=>{
+      if(n.isMesh){
+        if(!n.material){
+          n.material = new THREE.MeshStandardMaterial({ roughness:0.95, metalness:0.0 });
+        }
+      }
+    });
+
+    three.cache.set(key, obj);
+    return obj.clone(true);
+  }
+
+  async function loadSTL(url){
+    const key = `stl::${url}`;
+    if(three.cache.has(key)) return three.cache.get(key).clone(true);
+
+    const geo = await new Promise((resolve, reject)=>{
+      three.stlLoader.load(url, resolve, undefined, reject);
+    });
+
+    const mat = new THREE.MeshStandardMaterial({ roughness:0.95, metalness:0.0 });
+    const mesh = new THREE.Mesh(geo, mat);
+
+    const group = new THREE.Group();
+    group.add(mesh);
+
+    three.cache.set(key, group);
+    return group.clone(true);
+  }
+
+  async function loadTerrainModel(terrain){
+    const entry = TERRAIN_ASSETS[terrain] || TERRAIN_ASSETS.normal;
+    if(entry.type === "fallback") return await loadTerrainModel("normal");
+    if(entry.type === "obj") return await loadOBJ(entry.url);
+    if(entry.type === "stl") return await loadSTL(entry.url);
+    return await loadTerrainModel("normal");
+  }
+
+  async function buildTerrainTiles(){
+    if(!three.tileGroup) return;
+    clearThreeTiles();
+
+    let ok = 0, fail = 0;
+
+    for(const h of hexes.values()){
+      const terrain = String(h.terrain || "normal");
+      const {x,y} = axialToPixel(h.q, h.r);
+
+      try{
+        const model = await loadTerrainModel(terrain);
+
+        // Rotate to lay flat for top-down map
+        model.rotation.x = Math.PI / 2;
+
+        centerAndScaleToHex(model);
+
+        // place in same world space as the hex
+        model.position.x += x;
+        model.position.y += y;
+        model.position.z = -5; // slightly behind SVG
+
+        three.tileGroup.add(model);
+        ok++;
+      }catch(e){
+        fail++;
+      }
+    }
+
+    log(`3D tiles built: ${ok} ok, ${fail} failed.`);
+    if(fail) log(`If failed>0: check Console for 404/paths (GLB folder case matters on GitHub Pages).`);
+
+    // ensure current pan/zoom applied
+    applyTransform();
   }
 
   /* -------------------------
      INIT
   ------------------------- */
-  ui.rollD6Btn.addEventListener("click", ()=>log("Roll D6 (wired in your full version)."));
-  ui.rollD3Btn.addEventListener("click", ()=>log("Roll D3 (wired in your full version)."));
-  ui.endMoveBtn.addEventListener("click", ()=>log("End Move (wired in your full version)."));
+  ui.rollD6Btn.addEventListener("click", ()=>rollMovement("d6"));
+  ui.rollD3Btn.addEventListener("click", ()=>rollMovement("d3"));
+  ui.endMoveBtn.addEventListener("click", endMove);
   ui.saveBtn.addEventListener("click", saveState);
   ui.resetBtn.addEventListener("click", resetState);
 
@@ -665,15 +1250,21 @@
       hexes = buildFullHexSet(mapLayout);
       state = loadStateOrInit();
 
+      view = { x:0, y:0, scale:1 };
+      applyTransform();
+
       renderAll();
+      log("Loaded map + data.");
+      log("Rule: Control is applied to EVERY hex traveled through.");
+
+      // ✅ Build 3D tiles AFTER we have hexes
       await buildTerrainTiles();
 
-      log("Loaded map + 3D terrain.");
     }catch(err){
       console.error(err);
       ui.versionPill.textContent = "error";
       log(`ERROR: ${err.message}`);
-      log("If you see 404s: GLB/ folder name & filename case must match exactly.");
+      log("Confirm file paths exist (relative paths for GitHub Pages). Also: must run on http(s), not file://");
     }
   }
 
