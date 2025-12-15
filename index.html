@@ -8,7 +8,6 @@
     :root{
       --bg:#0b0f14;
       --panel:#0f1621;
-      --panel2:#121c2a;
       --text:#e6edf3;
       --muted:#94a3b8;
       --line:rgba(255,255,255,.12);
@@ -21,11 +20,10 @@
       --neu:#64748b;   /* neutral/none */
 
       /* terrain tints */
-      --urban: rgba(59,130,246,.12);
-      --industrial: rgba(245,158,11,.12);
-      --wasteland: rgba(239,68,68,.12);
-      --fortified: rgba(34,197,94,.12);
-      --normal: rgba(255,255,255,.03);
+      --urban: rgba(59,130,246,.10);
+      --industrial: rgba(245,158,11,.10);
+      --wasteland: rgba(239,68,68,.10);
+      --fortified: rgba(34,197,94,.10);
     }
     *{box-sizing:border-box}
     body{
@@ -219,7 +217,7 @@
     }
     .token text{
       font-size: 11px;
-      font-weight: 800;
+      font-weight: 900;
       fill: rgba(0,0,0,.85);
       text-anchor: middle;
       dominant-baseline: middle;
@@ -257,10 +255,10 @@
 
       <div class="hint">
         <b>Flow:</b> Click a token → Roll movement → click a reachable hex to move.<br/>
-        If you move into an enemy token, it logs a <b>battle trigger</b>.
+        Movement is <b>per-token</b>. You can’t re-roll until you move or End Move.
       </div>
-      <div class="divider"></div>
 
+      <div class="divider"></div>
       <div class="kv">
         <div class="k">Selected</div><div class="v" id="selToken">None</div>
         <div class="k">Move Pts</div><div class="v" id="movePts">—</div>
@@ -318,7 +316,7 @@
       <div class="b" id="tipBody"></div>
     </div>
 
-    <svg id="svg" viewBox="-800 -600 1600 1200" aria-label="Hex map">
+    <svg id="svg" viewBox="-900 -650 1800 1300" aria-label="Hex map">
       <g id="viewport">
         <g id="hexLayer"></g>
         <g id="tokenLayer"></g>
@@ -329,7 +327,12 @@
 
 <script>
 /**
- * CONFIG: update these if your files live elsewhere.
+ * GitHub Pages friendly: use RELATIVE paths (no leading "/")
+ * Ensure you have:
+ *   maps/bastior_prime_hex_v1/map_layout_v1.json
+ *   maps/bastior_prime_hex_v1/spawns_v1.json
+ *   maps/bastior_prime_hex_v1/tokens_v1.json
+ *   data/installations_v1.json
  */
 const PATHS = {
   mapLayout:  "maps/bastior_prime_hex_v1/map_layout_v1.json",
@@ -372,9 +375,6 @@ const ui = {
   viewport: document.getElementById("viewport"),
   hexLayer: document.getElementById("hexLayer"),
   tokenLayer: document.getElementById("tokenLayer"),
-
-  // IMPORTANT: tooltip coordinates should be relative to the map area, not the window.
-  mapWrap: document.querySelector(".mapWrap"),
 };
 
 let baseData = null;     // immutable loaded JSON
@@ -413,10 +413,9 @@ function hexDist(a,b){
 }
 
 // ---------- geometry (pointy-top) ----------
-const HEX_SIZE = 32; // px-ish in SVG units
+const HEX_SIZE = 30; // px-ish in SVG units
 
 function axialToPixel(q,r){
-  // pointy-top axial
   const x = HEX_SIZE * Math.sqrt(3) * (q + r/2);
   const y = HEX_SIZE * 3/2 * r;
   return {x,y};
@@ -438,10 +437,9 @@ function terrainTint(terrain){
     case "industrial": return "var(--industrial)";
     case "wasteland": return "var(--wasteland)";
     case "fortified": return "var(--fortified)";
-    default: return "var(--normal)";
+    default: return "rgba(255,255,255,.02)";
   }
 }
-
 function factionFill(factionId){
   if(!factionId) return "rgba(255,255,255,.02)";
   if(factionId==="defenders") return "rgba(59,130,246,.18)";
@@ -450,72 +448,12 @@ function factionFill(factionId){
   return "rgba(255,255,255,.02)";
 }
 
-// ---------- procedural planet terrain (Imperium feel) ----------
-function hash2(q, r, seed=1337){
-  let x = (q * 374761393) ^ (r * 668265263) ^ seed;
-  x = (x ^ (x >> 13)) * 1274126177;
-  x = x ^ (x >> 16);
-  return ((x >>> 0) / 4294967296);
-}
-
-function pickBaseTerrain(q, r, radius){
-  const d = hexDist({q,r},{q:0,r:0});
-  const n = hash2(q, r);
-
-  // Imperium planet bias: lots of city + industry, wasteland scars, some fortified lines
-  let urbanW = 0.14, indW = 0.16, wasteW = 0.10, fortW = 0.05;
-
-  if(d <= radius*0.30){ urbanW = 0.34; indW = 0.28; wasteW = 0.06; fortW = 0.02; }
-  else if(d <= radius*0.60){ urbanW = 0.20; indW = 0.22; wasteW = 0.12; fortW = 0.04; }
-  else { urbanW = 0.10; indW = 0.14; wasteW = 0.18; fortW = 0.07; }
-
-  // “continents” / megacity-industrial basins (fixed attractors, deterministic)
-  const attractors = [
-    {q:-6, r: 2, t:"urban"},
-    {q: 5, r:-4, t:"industrial"},
-    {q: 2, r: 7, t:"urban"},
-    {q:-2, r:-8, t:"wasteland"},
-    {q: 8, r: 4, t:"industrial"},
-  ];
-
-  for(const a of attractors){
-    const dist = hexDist({q,r}, a);
-    if(dist <= 2){
-      if(a.t === "urban") { urbanW += 0.55; indW += 0.18; }
-      if(a.t === "industrial") { indW += 0.60; urbanW += 0.12; }
-      if(a.t === "wasteland") { wasteW += 0.65; }
-    } else if(dist <= 4){
-      if(a.t === "urban") { urbanW += 0.24; indW += 0.10; }
-      if(a.t === "industrial") { indW += 0.28; wasteW += 0.07; }
-      if(a.t === "wasteland") { wasteW += 0.26; }
-    }
-  }
-
-  // Wasteland “scar ring” around mid-latitudes (gives planet texture)
-  const ring = Math.abs(d - radius*0.55);
-  if(ring < 1.2) wasteW += 0.12;
-
-  // Fortified bias along outer rim (defense lines)
-  if(d > radius*0.82 && (hash2(q, r, 9001) > 0.82)) fortW += 0.20;
-
-  const sum = urbanW + indW + wasteW + fortW;
-  const u = urbanW / sum;
-  const i = indW / sum;
-  const w = wasteW / sum;
-
-  if(n < u) return "urban";
-  if(n < u + i) return "industrial";
-  if(n < u + i + w) return "wasteland";
-  return "fortified";
-}
-
 // ---------- load + state ----------
 async function loadJSON(path){
   const res = await fetch(path, {cache:"no-cache"});
   if(!res.ok) throw new Error(`Failed to load ${path} (${res.status})`);
   return await res.json();
 }
-
 function storageKey(mapId){ return `${STORAGE_PREFIX}${mapId}`; }
 
 function buildInitialState(){
@@ -527,7 +465,6 @@ function buildInitialState(){
   }
 
   const tokenState = tokens.map(t=>({ ...t }));
-
   return {
     map_id: mapLayout.map_id,
     version: mapLayout.version || "v1",
@@ -566,14 +503,13 @@ function resetState(){
   log("Reset to base data.");
 }
 
-// ---------- map expansion + procedural terrain ----------
+// ---------- map expansion ----------
 function buildFullHexSet(mapLayout){
   const r = Number(mapLayout.radius ?? 0);
   const expected = 1 + 3*r*(r+1);
   const listed = Array.isArray(mapLayout.hexes) ? mapLayout.hexes : [];
 
-  const full = new Map();
-
+  const full = new Map(); // hexKey -> hex obj
   function set(h){
     full.set(hexKey(h.q,h.r), {
       q: h.q, r: h.r,
@@ -588,29 +524,25 @@ function buildFullHexSet(mapLayout){
     return full;
   }
 
-  // generate full radius with planet terrain
+  // generate full radius
   for(let q=-r; q<=r; q++){
     for(let rr=-r; rr<=r; rr++){
       const s = -q-rr;
       if(Math.abs(s) <= r){
-        const terrain = pickBaseTerrain(q, rr, r);
-        set({q, r: rr, terrain, installation_id:null, notes:""});
+        set({q, r: rr, terrain:"normal", installation_id:null, notes:""});
       }
     }
   }
 
-  // overlay listed special hexes (your JSON wins)
+  // overlay listed specials
   for(const h of listed){
-    const k = hexKey(h.q,h.r);
-    const prev = full.get(k);
-    full.set(k, {
-      q: h.q, r: h.r,
-      terrain: h.terrain ?? prev?.terrain ?? "normal",
-      installation_id: h.installation_id ?? prev?.installation_id ?? null,
-      notes: h.notes ?? prev?.notes ?? "",
+    full.set(hexKey(h.q,h.r), {
+      q:h.q, r:h.r,
+      terrain: h.terrain ?? full.get(hexKey(h.q,h.r))?.terrain ?? "normal",
+      installation_id: h.installation_id ?? null,
+      notes: h.notes ?? "",
     });
   }
-
   return full;
 }
 
@@ -631,27 +563,26 @@ function canTraverseHex(q,r, moverFactionId){
 
 function computeReachable(token, budget){
   const start = {q:token.q, r:token.r};
-  const visited = new Map();
+  const visited = new Map(); // hexKey -> dist
   const q0 = [{q:start.q, r:start.r, d:0}];
   visited.set(hexKey(start.q,start.r), 0);
 
   while(q0.length){
     const cur = q0.shift();
     if(cur.d === budget) continue;
+
     for(const nb of neighbors(cur.q, cur.r)){
       const k = hexKey(nb.q, nb.r);
       if(!hexes.has(k)) continue;
+
       const nd = cur.d + 1;
       if(visited.has(k) && visited.get(k) <= nd) continue;
 
       const passable = canTraverseHex(nb.q, nb.r, token.faction_id);
-      if(!passable){
-        visited.set(k, nd);
-        continue;
-      }
-
       visited.set(k, nd);
-      q0.push({q:nb.q, r:nb.r, d:nd});
+
+      // if enemy-controlled, allow landing but do not expand beyond it
+      if(passable) q0.push({q:nb.q, r:nb.r, d:nd});
     }
   }
 
@@ -676,6 +607,7 @@ function applyMove(token, destQ, destR){
   token.q = destQ;
   token.r = destR;
 
+  // only flip control immediately if no enemy collision
   if(!occupant || occupant.faction_id === token.faction_id){
     state.control[destKey] = token.faction_id;
   }
@@ -683,8 +615,49 @@ function applyMove(token, destQ, destR){
   log(`Moved ${token.token_id} → ${destKey}`);
 }
 
+// ---------- token uniqueness + labeling ----------
+function tokenGlyph(t){
+  const id = String(t.token_id || "").toLowerCase();
+  if(id.startsWith("def_")) return "D" + (id.split("_")[1] || "");
+  if(id.startsWith("atk_")) return "A" + (id.split("_")[1] || "");
+  if(id.startsWith("rai_")) return "R" + (id.split("_")[1] || "");
+  return (t.token_id || "?").slice(0,2).toUpperCase();
+}
+
+// ---------- stacking fan-out ----------
+function groupTokensByHex(tokens){
+  const m = new Map(); // hexKey -> [tokens]
+  for(const t of tokens){
+    if(t.status !== "active") continue;
+    const k = hexKey(t.q, t.r);
+    if(!m.has(k)) m.set(k, []);
+    m.get(k).push(t);
+  }
+  return m;
+}
+function fanOffset(index, count){
+  if(count <= 1) return {dx:0, dy:0};
+
+  const ring1 = Math.min(count, 6);
+  const ring2 = Math.max(0, count - 6);
+
+  const radius1 = 16;
+  const radius2 = 28;
+
+  const angles6 = [270, 330, 30, 90, 150, 210];
+
+  if(index < ring1){
+    const a = angles6[index % 6] * (Math.PI/180);
+    return { dx: Math.cos(a) * radius1, dy: Math.sin(a) * radius1 };
+  }
+
+  const idx2 = index - 6;
+  const a = (idx2 * (360 / Math.max(1, ring2))) * (Math.PI/180);
+  return { dx: Math.cos(a) * radius2, dy: Math.sin(a) * radius2 };
+}
+
 // ---------- rendering ----------
-let hexes = null;
+let hexes = null; // Map hexKey -> hex obj
 let installsById = new Map();
 
 function setHUD(){
@@ -699,12 +672,26 @@ function setHUD(){
 
 function updateSidebarSelection(){
   const t = selectedTokenId ? tokenById(selectedTokenId) : null;
-  ui.selToken.textContent = t ? `${t.token_id} (${t.faction_id}) @ ${t.q},${t.r}` : "None";
+  ui.selToken.textContent = t
+    ? `${t.token_id} — ${t.player_name || "Player"} (${t.faction_id}) @ ${t.q},${t.r}`
+    : "None";
   ui.movePts.textContent = moveBudget == null ? "—" : String(moveBudget);
   ui.mode.textContent = (selectedTokenId && moveBudget!=null) ? "Move" : (selectedTokenId ? "Selected" : "Idle");
 }
 
 function clearLayer(el){ while(el.firstChild) el.removeChild(el.firstChild); }
+
+function shortInstallLabel(id){
+  switch(id){
+    case "administratum_nexus": return "ADMIN";
+    case "fortress_complex": return "FORT";
+    case "manufactorum_node": return "MFG";
+    case "hive_ruins": return "HIVE";
+    case "void_port": return "PORT";
+    case "medicae_facility": return "MED";
+    default: return String(id).slice(0,6).toUpperCase();
+  }
+}
 
 function renderHexes(){
   clearLayer(ui.hexLayer);
@@ -713,28 +700,15 @@ function renderHexes(){
     const {x,y} = axialToPixel(h.q, h.r);
     const poly = document.createElementNS("http://www.w3.org/2000/svg","polygon");
     poly.setAttribute("points", hexPolygonPoints(x,y));
-    poly.setAttribute("data-q", h.q);
-    poly.setAttribute("data-r", h.r);
 
     const k = hexKey(h.q,h.r);
     const owner = state.control[k] || null;
 
-    const terrain = terrainTint(h.terrain);
-
-    // show terrain always; add subtle owner glow if controlled
-    poly.style.fill = terrain;
-    poly.style.fillOpacity = 1;
+    poly.style.fill = owner ? factionFill(owner) : terrainTint(h.terrain);
 
     poly.classList.add("hex");
     if(reachableSet.has(k)) poly.classList.add("reachable");
     if(selectedHexKey===k) poly.classList.add("selected");
-
-    if(owner){
-      const glow = (FACTIONS[owner]?.color) || "rgba(255,255,255,.12)";
-      poly.style.filter = `drop-shadow(0 0 6px ${glow})`;
-    }else{
-      poly.style.filter = "";
-    }
 
     poly.addEventListener("mouseenter", (e)=>showHexTip(e, h));
     poly.addEventListener("mousemove", (e)=>moveTip(e));
@@ -761,65 +735,53 @@ function renderHexes(){
   }
 }
 
-function shortInstallLabel(id){
-  switch(id){
-    case "administratum_nexus": return "ADMIN";
-    case "fortress_complex": return "FORT";
-    case "manufactorum_node": return "MFG";
-    case "hive_ruins": return "HIVE";
-    case "void_port": return "PORT";
-    case "medicae_facility": return "MED";
-    default: return String(id).slice(0,6).toUpperCase();
-  }
-}
-
 function renderTokens(){
   clearLayer(ui.tokenLayer);
 
-  for(const t of state.tokens){
-    if(t.status !== "active") continue;
+  const activeTokens = state.tokens.filter(t => t.status === "active");
+  const groups = groupTokensByHex(activeTokens);
 
-    const {x,y} = axialToPixel(t.q, t.r);
-    const g = document.createElementNS("http://www.w3.org/2000/svg","g");
-    g.classList.add("token");
-    if(t.token_id === selectedTokenId) g.classList.add("selected");
-    g.setAttribute("transform", `translate(${x},${y})`);
-    g.setAttribute("data-id", t.token_id);
+  for(const [k, group] of groups.entries()){
+    group.sort((a,b)=> String(a.token_id).localeCompare(String(b.token_id)));
 
-    const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
-    c.setAttribute("r", 13);
-    c.setAttribute("cx", 0);
-    c.setAttribute("cy", 0);
-    c.style.fill = (FACTIONS[t.faction_id]?.color) || "var(--neu)";
-    g.appendChild(c);
+    const {q, r} = parseHexKey(k);
+    const base = axialToPixel(q, r);
 
-    const txt = document.createElementNS("http://www.w3.org/2000/svg","text");
-    txt.setAttribute("x", 0);
-    txt.setAttribute("y", 1);
-    txt.textContent = tokenGlyph(t);
-    g.appendChild(txt);
+    group.forEach((t, i) => {
+      const off = fanOffset(i, group.length);
+      const x = base.x + off.dx;
+      const y = base.y + off.dy;
 
-    g.addEventListener("click", (e)=>{
-      e.stopPropagation();
-      selectToken(t.token_id);
+      const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+      g.classList.add("token");
+      if(t.token_id === selectedTokenId) g.classList.add("selected");
+      g.setAttribute("transform", `translate(${x},${y})`);
+      g.setAttribute("data-id", t.token_id);
+
+      const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
+      c.setAttribute("r", 13);
+      c.style.fill = (FACTIONS[t.faction_id]?.color) || "var(--neu)";
+      g.appendChild(c);
+
+      const txt = document.createElementNS("http://www.w3.org/2000/svg","text");
+      txt.setAttribute("x", 0);
+      txt.setAttribute("y", 1);
+      txt.textContent = tokenGlyph(t);
+      g.appendChild(txt);
+
+      g.addEventListener("click", (e)=>{
+        e.stopPropagation();
+        selectToken(t.token_id);
+      });
+
+      g.addEventListener("mouseenter", (e)=>showTokenTip(e, t));
+      g.addEventListener("mousemove", (e)=>moveTip(e));
+      g.addEventListener("mouseleave", hideTip);
+
+      ui.tokenLayer.appendChild(g);
     });
-
-    g.addEventListener("mouseenter", (e)=>showTokenTip(e, t));
-    g.addEventListener("mousemove", (e)=>moveTip(e));
-    g.addEventListener("mouseleave", hideTip);
-
-    ui.tokenLayer.appendChild(g);
   }
 }
-function tokenGlyph(t){
-  const id = String(t.token_id || "").toLowerCase();
-  if(id.startsWith("def_")) return "D" + (id.split("_")[1] || "");
-  if(id.startsWith("atk_")) return "A" + (id.split("_")[1] || "");
-  if(id.startsWith("rai_")) return "R" + (id.split("_")[1] || "");
-  // fallback
-  return (t.token_id || "?").slice(0,2).toUpperCase();
-}
-
 
 function renderAll(){
   setHUD();
@@ -842,12 +804,12 @@ function showHexTip(evt, h){
   if(h.installation_id){
     const inst = installsById.get(h.installation_id);
     if(inst){
-      title = inst.name;
+      title = inst.name || `Installation: ${h.installation_id}`;
       sub = `${ownerName} • ${h.installation_id}`;
-      body = inst.effect_text || "";
+      body = inst.effect_text || inst.effect || "";
     }else{
       title = `Installation: ${h.installation_id}`;
-      body = "No installation data found.";
+      body = "No installation data found for this id.";
     }
     if(h.notes) body = (body ? body + "\n\n" : "") + `Notes: ${h.notes}`;
   }else{
@@ -864,23 +826,17 @@ function showHexTip(evt, h){
 function showTokenTip(evt, t){
   ui.tipTitle.textContent = `Token: ${t.token_id}`;
   ui.tipSub.textContent = `${FACTIONS[t.faction_id]?.name || t.faction_id} • ${t.status}`;
-  ui.tipBody.textContent = `Location: ${t.q},${t.r}`;
+  ui.tipBody.textContent = `Player: ${t.player_name || "—"}\nLocation: ${t.q},${t.r}`;
   ui.tip.style.display = "block";
   moveTip(evt);
 }
 
 function moveTip(evt){
-  const pad = 8;
-  const rect = ui.mapWrap.getBoundingClientRect();
-  const x = evt.clientX - rect.left + pad;
-  const y = evt.clientY - rect.top + pad;
-  ui.tip.style.left = x + "px";
-  ui.tip.style.top  = y + "px";
+  const pad = 14;
+  ui.tip.style.left = (evt.clientX + pad) + "px";
+  ui.tip.style.top = (evt.clientY + pad) + "px";
 }
-
-function hideTip(){
-  ui.tip.style.display = "none";
-}
+function hideTip(){ ui.tip.style.display = "none"; }
 
 // ---------- selection + movement ----------
 function selectToken(id){
@@ -888,7 +844,6 @@ function selectToken(id){
   moveBudget = null;
   reachableSet = new Set();
   selectedHexKey = null;
-  updateSidebarSelection();
   renderAll();
   const t = tokenById(id);
   if(t) log(`Selected ${t.token_id} (${t.faction_id})`);
@@ -898,13 +853,15 @@ function rollMovement(kind){
   const t = selectedTokenId ? tokenById(selectedTokenId) : null;
   if(!t){ log("Select a token first."); return; }
 
-  if(kind==="d6") moveBudget = randInt(1,6);
-  if(kind==="d3") moveBudget = randInt(1,3);
+  if(moveBudget != null){
+    log("You already rolled movement. Move or click End Move.");
+    return;
+  }
 
+  moveBudget = (kind==="d6") ? randInt(1,6) : randInt(1,3);
   const reachableMap = computeReachable(t, moveBudget);
   reachableSet = new Set(reachableMap.keys());
 
-  updateSidebarSelection();
   renderAll();
   log(`Rolled ${kind.toUpperCase()} = ${moveBudget} (reachable hexes highlighted)`);
 }
@@ -913,7 +870,6 @@ function endMove(){
   moveBudget = null;
   reachableSet = new Set();
   selectedHexKey = null;
-  updateSidebarSelection();
   renderAll();
   log("Ended move mode.");
 }
@@ -932,7 +888,6 @@ function onHexClick(h){
     }
     applyMove(t, h.q, h.r);
     endMove();
-    renderAll();
     return;
   }
 
@@ -967,12 +922,9 @@ ui.svg.addEventListener("wheel", (e)=>{
   e.preventDefault();
   const delta = -Math.sign(e.deltaY);
   const factor = delta > 0 ? 1.12 : 0.90;
-  const next = clamp(view.scale * factor, 0.35, 2.5);
-  view.scale = next;
+  view.scale = clamp(view.scale * factor, 0.35, 2.7);
   applyTransform();
 },{passive:false});
-
-ui.svg.addEventListener("click", ()=>{});
 
 // ---------- wiring ----------
 ui.rollD6Btn.addEventListener("click", ()=>rollMovement("d6"));
@@ -992,13 +944,14 @@ async function init(){
 
     baseData = { mapLayout, spawns, tokens, installs };
     installsById = new Map((installs||[]).map(x=>[x.id, x]));
+
     hexes = buildFullHexSet(mapLayout);
+
     state = loadStateOrInit();
 
     view = { x:0, y:0, scale:1 };
     applyTransform();
 
-    setHUD();
     renderAll();
     log("Loaded map + data.");
     log("Tip: Select a token, roll movement, click a highlighted hex.");
@@ -1007,7 +960,7 @@ async function init(){
     console.error(err);
     ui.versionPill.textContent = "error";
     log(`ERROR: ${err.message}`);
-    log("Check PATHS at top of file and confirm JSON paths exist in GitHub Pages.");
+    log("Confirm file paths exist (and use relative paths on GitHub Pages).");
   }
 }
 
